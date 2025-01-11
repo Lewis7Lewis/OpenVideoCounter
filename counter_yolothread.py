@@ -29,6 +29,7 @@ provider = [
     ("CUDAExecutionProvider", cuda_ep_option)
 ]  # ('TensorrtExecutionProvider',trt_ep_options),
 
+provider = onx.get_available_providers()
 
 def determinant(u, v):
     """Calculate the determinant of a 2scalar vector"""

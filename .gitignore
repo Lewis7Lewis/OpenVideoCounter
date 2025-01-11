@@ -1,4 +1,7 @@
 /Models
 /NotProvided
 /Videos
+/__pycache__
+/.venv
 .gitignore
+config.bak.toml
