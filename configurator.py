@@ -1,3 +1,4 @@
+"""Check allthe config on images"""
 import cv2
 import numpy as np
 
@@ -7,6 +8,7 @@ from anayzer import Analyser
 
 
 def load_img(url,video=False):
+    """Load an image to test"""
     if video :
         cam = cv2.VideoCapture(url)
         ok , img = cam.read()
@@ -18,6 +20,7 @@ def load_img(url,video=False):
 
 
 def show(title,img,infos=True):
+    """Show an image and show details"""
     if infos :
         height,width,_ = img.shape
         print(f"{title} : H : {height}, W:{width}")
@@ -31,9 +34,10 @@ if __name__ == "__main__" :
 
     assert analys.check()
 
-    url = input("Image url :")
-    print(url.split(".")[-1])
-    img = load_img(url,url.split(".")[-1] == "mp4")
-    show("Base_image",img)
-    show("inference image",analys.crop_scale_inferance(img))
+    imgurl = input("Image url :")
+    print(imgurl.split(".")[-1])
+    image = load_img(imgurl,imgurl.split(".")[-1] == "mp4")
+    show("Base_image",image)
+    resize = analys.crop_scale_inferance(image)
+    show("inference image",analys.draw_settings(resize))
     cv2.waitKey(0)

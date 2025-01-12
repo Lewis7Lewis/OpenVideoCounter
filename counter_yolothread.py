@@ -13,6 +13,8 @@ import onnxruntime as onx
 
 from static import LIST_COLORS
 
+from anayzer import Analyser
+
 
 sess_options = onx.SessionOptions()
 sess_options.enable_profiling = False
@@ -30,6 +32,7 @@ provider = [
 ]  # ('TensorrtExecutionProvider',trt_ep_options),
 
 provider = onx.get_available_providers()
+
 
 def determinant(u, v):
     """Calculate the determinant of a 2scalar vector"""
@@ -78,8 +81,9 @@ class FPSMeter:
 class Reader:
     """A threaded worker that read the input flux"""
 
-    def __init__(self, url, fifo: queue.Queue):
+    def __init__(self, url, analys: Analyser, fifo: queue.Queue):
         self.url = url  # default is 0 for primary camera
+        self.analys = analys
         self.fifo = fifo
         self.fps = FPSMeter()
         # opening video capture stream
@@ -107,13 +111,6 @@ class Reader:
         self.stopped = False
         self.t.start()
 
-    def do_pre_image(self, img):
-        """Prepare the image to inference"""
-        img = cv2.resize(img, [i // 2 for i in reversed(img.shape[:2])])
-        shape = img.shape
-        img = img[:, 200 : shape[1] - 300]
-        return img
-
     def update(self):
         """The Thread main process"""
         while True:
@@ -123,9 +120,10 @@ class Reader:
             if self.grabbed:
                 self.i += 1
                 self.fps.update()
-                self.fifo.put((self.i, self.do_pre_image(self.frame)), True)
+                self.fifo.put(
+                    (self.i, self.analys.crop_scale_inferance(self.frame)), True
+                )
             if self.grabbed is False:
-
                 self.fifo.put(("end", []), True)
                 print("[Exiting] No more frames to read")
                 self.stopped = True
@@ -157,11 +155,13 @@ class Inferance:
         self,
         imgsfifo: queue.Queue,
         predfifo: queue.Queue,
+        analys: Analyser,
         videoinfos=None,
         net="yolov8n.onnx",
         size=30,
     ) -> None:
         self.size = size
+        self.analys = analys
         self.fps = FPSMeter()
         if videoinfos is None:
             self.videoinfos = [20, 120000]
@@ -241,9 +241,16 @@ class Computing:
     """A threded worker to compute the infrered data"""
 
     def __init__(
-        self, predfifo: queue.Queue, peoplefifo: queue.Queue, videoinfos=None
+        self,
+        predfifo: queue.Queue,
+        peoplefifo: queue.Queue,
+        analys: Analyser,
+        videoinfos=None,
+        show=False,
     ) -> None:
         self.people = {}
+        self.analys = analys
+        self.show = show
         if videoinfos is None:
             self.videoinfos = [20, 120000]
         else:
@@ -263,47 +270,9 @@ class Computing:
         # predefine
         self.i = None
 
-    def do_post_image(self, img, predictions):
-        """Do the post need befor calculating"""
-        shape = img.shape
-        [height, width, _] = shape
-
-        predictions = np.array(cv2.transpose(predictions))
-        boxes = []
-        scores = []
-
-        # Iterate through output to collect bounding boxes, confidence scores, and class IDs
-        for d in predictions:
-            classes_scores = d[4:]
-            (_, max_score, _, (_, max_class_index)) = cv2.minMaxLoc(classes_scores)
-            if max_score >= 0.25 and max_class_index == 0:
-                box = np.array(
-                    [
-                        (d[0] - (0.5 * d[2])) * (width / 640),
-                        (d[1] - (0.5 * d[3])) * (height / 640),
-                        d[2] * (width / 640),
-                        d[3] * (height / 640),
-                    ]
-                )
-                if abs((height // 2) - (box[1] + box[3] // 2)) >= 75:
-                    continue
-                if box[2] >= 150 and box[3] >= 150:
-                    continue
-                boxes.append(box)
-                scores.append(max_score)
-
-        # Apply NMS (Non-maximum suppression)
-        detect = []
-        result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
-        if len(result_boxes) > 0:
-            for index in result_boxes:  # pylint: disable=E1133
-                box = np.array(boxes[index], dtype=np.int16)
-                detect.append(box)
-
-        return detect
-
     def tracking(self, detect):
         """The tracking function to calculate paths"""
+        trackdist = self.analys.get_max_tracking_dist()
         for x, y, w, h in detect:
             midle = (x + (w // 2), y + (h // 2))
             if len(self.people) >= 1:
@@ -313,7 +282,7 @@ class Computing:
                     if self.people[ident]["last_seen"] + 10 >= self.i
                 ]
                 d.sort(key=lambda x: x[1])
-                if len(d) >= 1 and d[0][1] <= 30:
+                if len(d) >= 1 and d[0][1] <= trackdist:
                     i, d = d[0]
                     self.people[i]["pose"].append(midle)
                     self.people[i]["last_seen"] = self.i
@@ -355,20 +324,16 @@ class Computing:
                 and self.people[p]["last_seen"] + 10 >= self.i
             ):
                 trajet = data["pose"][-2:]
-                if (
-                    distance(*trajet) >= 5
-                    and determinant(vect(*trajet), (-1, 0)) / distance(*trajet) >= 0.80
-                    and abs(shape[0] // 2 - data["pose"][-1][1]) <= 20
-                ):
+                passing, error = self.analys.passing_fences(trajet, shape)
+                if passing:
                     self.people[p]["pass"] = True
                     self.counter += 1
 
     def draw(self, img, detect):
         """The drawing function to see what's is going on"""
-        out = img.copy()
+        out = self.analys.draw_settings(img.copy())
         shape = img.shape
         [height, width, _] = shape
-        cv2.line(out, (0, height // 2), (width, height // 2), (0, 0, 255), 2)
         for x, y, w, h in detect:
             xy = x, y
             x1y1 = x + w, y + h
@@ -410,7 +375,6 @@ class Computing:
             2,
             cv2.LINE_AA,
         )
-
         return out
 
     def start(self):
@@ -432,7 +396,7 @@ class Computing:
                     self.stop()
                 else:
                     self.i = i
-                    detect = self.do_post_image(img, prediction)
+                    detect = self.analys.overlap_supression(img, prediction)
                     self.tracking(detect)
                     self.clean_people()
                     self.count_people(img)
@@ -444,6 +408,11 @@ class Computing:
                         self.peoplefifo.put(
                             (i // (60 * self.videoinfos[0]), self.counter)
                         )
+
+                    if self.show:
+                        
+                        cv2.imshow("image",self.draw(img, detect))
+                        cv2.waitKey(10)
 
                     self.fps.update()
                     if i % (INFOTIME * self.videoinfos[0]) == 0:
@@ -520,15 +489,23 @@ class Loger:
 class TDetector:
     """The treaded Detector the manages alls workers"""
 
-    def __init__(self, url, logfile, size=30, net="yolov8n.onnx") -> None:
+    def __init__(
+        self, configfile, url, logfile, size=30, net="yolov8n.onnx", show=False
+    ) -> None:
+        self.configfile = configfile
         self.logfile = logfile
         self.imgs = queue.Queue(60)
         self.preds = queue.Queue(60)
         self.people = queue.Queue(60)
-        self.cam = Reader(url, self.imgs)
+
+        self.analys = Analyser(self.configfile)
+        self.analys.open()
+        self.cam = Reader(url, self.analys, self.imgs)
         videoinfos = self.cam.framerate, self.cam.frame_count
-        self.infe = Inferance(self.imgs, self.preds, videoinfos, net, size=size)
-        self.compute = Computing(self.preds, self.people, videoinfos)
+        self.infe = Inferance(
+            self.imgs, self.preds, self.analys, videoinfos, net, size=size
+        )
+        self.compute = Computing(self.preds, self.people, self.analys, videoinfos, show)
         self.loger = Loger(logfile, self.people)
 
     def run(self):
@@ -547,7 +524,7 @@ class TDetector:
             self.loger.stop()
 
         self.loger.rec(
-            self.cam.frame_count / (self.cam.framerate) * 60, self.compute.counter
+            self.cam.frame_count / (self.cam.framerate * 60), self.compute.counter
         )
         self.loger.close()
 
@@ -568,7 +545,12 @@ if __name__ == "__main__":
     )
 
     Detectorator = TDetector(
-        Video_file, csvfilename, size=32, net="Models/yolov8n.onnx"
+        "config.toml",
+        Video_file,
+        csvfilename,
+        size=32,
+        net="Models/yolov8n.onnx",
+        show=False,
     )
     print("Starting")
     startjob = datetime.datetime.now()
