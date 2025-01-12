@@ -18,6 +18,18 @@ def distance(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5
 
 
+def intersects(s0,s1):
+    dx0 = s0[1][0]-s0[0][0]
+    dx1 = s1[1][0]-s1[0][0]
+    dy0 = s0[1][1]-s0[0][1]
+    dy1 = s1[1][1]-s1[0][1]
+    p0 = dy1*(s1[1][0]-s0[0][0]) - dx1*(s1[1][1]-s0[0][1])
+    p1 = dy1*(s1[1][0]-s0[1][0]) - dx1*(s1[1][1]-s0[1][1])
+    p2 = dy0*(s0[1][0]-s1[0][0]) - dx0*(s0[1][1]-s1[0][1])
+    p3 = dy0*(s0[1][0]-s1[1][0]) - dx0*(s0[1][1]-s1[1][1])
+    return (p0*p1<=0) & (p2*p3<=0)
+
+
 
 class Analyser():
     """The Analyser hold all computation method link to config file"""
@@ -26,7 +38,7 @@ class Analyser():
         self.configfile = file
         self.config = {"crop":{"left":0,"right":0,"top":0,"bottom":0},
                        "filters":{"minsize":150,"trackingDistance":75,"minWalkingDistance":5},
-                       "fence":{"l":50,"r":50}}
+                       "fence":{"l":50,"r":50,"angle":20}}
 
 
     def open(self,file=None):
@@ -120,26 +132,49 @@ class Analyser():
         return detect
     
     def passing_fences(self, trajet,shape):
+        
+        dt = distance(*trajet)
+        if not dt >= self.config["filters"]["minWalkingDistance"]:
+            return False
+        
         [height, width, _] = shape
-        mx, my = trajet[-1]
         fl = self.config["fence"]["l"]
         fr = self.config["fence"]["r"]
-        fy = ((mx/width)*(fl-fr)  + fr)*height
-        if not abs(fy - my) <= 20 :
+        fp = np.array([(0,fl*height/100),(width,fr*height/100)])
+        
+        if not intersects(trajet,fp) :
             return False
-        if not distance(*trajet) >= 5:
-            return False
-        if not  determinant(vect(*trajet), (-1, 0)) / distance(*trajet) >= 0.80 :
+
+        fv = np.array((-np.sqrt(1-((fl-fr)/100)**2), (fl-fr)/100))
+        if not  determinant(vect(*trajet), fv) / distance(*trajet) >= np.cos(np.deg2rad(self.config["fence"]["angle"])/2) :
             return False
         
+
         return True
-
-
-        
-
 
 
 if __name__ ==  "__main__" :
     analys = Analyser("config.toml")
-    analys.save()
+    analys.open()
     print(analys.config)
+    shape = np.array([640,640])
+    import matplotlib.pyplot as plt
+    midle = shape//2
+    fig = plt.figure("Travels graph")
+    plt.axline((0,analys.config["fence"]["l"]*shape[1]/100),(shape[0],shape[1]*analys.config["fence"]["r"]/100))
+    for a in np.linspace(0,np.pi*2,4*6,endpoint=False) :
+        trajet = np.array([[np.cos(a),np.sin(a)],[-np.cos(a),-np.sin(a)]])
+        trajet *= analys.config["filters"]["minWalkingDistance"]
+        trajet += midle
+        ok = analys.passing_fences(trajet,np.concat([shape,[0]]))
+        print("state :",ok,"points :",trajet,"vector :",(trajet[1]-trajet[0]))
+
+        if ok : 
+            plt.quiver(*trajet[0],*(trajet[1]-trajet[0]),color="g",scale=0.2,angles="xy",scale_units='xy')
+        else :
+            plt.quiver(*trajet[0],*(trajet[1]-trajet[0]),color="r",scale=0.2,angles="xy",scale_units='xy')
+    plt.axis('equal')
+    plt.xlim(0,shape[0])
+    plt.ylim(shape[1],0)
+    plt.show()
+        
