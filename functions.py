@@ -1,5 +1,7 @@
 """Important functions"""
 
+import numpy as np
+
 def beautifultime(s):
     """Make a string from a second time"""
     m = s // 60
@@ -21,7 +23,8 @@ def vect(a: tuple, b: tuple) -> tuple:
 
 def distance(a, b):
     """calculate the euclerien distance(norm L2)"""
-    return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5
+    v = np.array(b)-np.array(a)
+    return np.linalg.norm(v,2)
 
 
 def intersects(s0, s1):

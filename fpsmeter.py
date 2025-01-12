@@ -2,6 +2,7 @@
 
 import time
 
+
 class FPSMeter:
     """A class to make a fps counter"""
 

@@ -1,12 +1,11 @@
 """Reader Module"""
 
-
 import queue
 from threading import Thread
 
 import cv2
 
-from anayzer import Analyser
+from analyzer import Analyser
 from fpsmeter import FPSMeter
 from functions import beautifultime
 from static import INFOTIME

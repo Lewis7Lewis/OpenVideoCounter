@@ -5,7 +5,6 @@ from threading import Thread
 import csv
 
 
-
 class Loger:
     """A threaded worker to Log and gat nices tables"""
 

@@ -3,18 +3,15 @@
 import datetime
 import queue
 import time
-from tkinter import filedialog
 
-from anayzer import Analyser
+from analyzer import Analyser
 from computing import Computing
 from inferance import Inferance
 from reader import Reader
 from loger import Loger
 
-last_time = time.time()
 
-
-class TDetector:
+class ThreadCounter:
     """The treaded Detector the manages alls workers"""
 
     def __init__(
@@ -35,9 +32,11 @@ class TDetector:
         )
         self.compute = Computing(self.preds, self.people, self.analys, videoinfos, show)
         self.loger = Loger(logfile, self.people)
+        self.duration = datetime.timedelta(milliseconds=1)
 
     def run(self):
         """the starting function"""
+        starttime = datetime.datetime.now()
         self.cam.start()
         self.infe.start()
         self.compute.start()
@@ -56,35 +55,13 @@ class TDetector:
         )
         self.loger.close()
 
-        return self.compute.counter
+        self.duration = datetime.datetime.now() - starttime
 
-    def factorspeed(self, timing):
+        return self.compute.counter, self.duration
+
+    def factorspeed(self):
         """To calculatio the speed of calculus"""
         return float(
             datetime.timedelta(seconds=self.cam.frame_count / self.cam.framerate)
-            / timing
+            / self.duration
         )
-
-
-if __name__ == "__main__":
-    Video_file = filedialog.askopenfilename(title="Select a VideoFile")
-    csvfilename = filedialog.asksaveasfilename(
-        title="Save CSV name", filetypes=(("CSV File", "*.csv"), ("all files", "*.*"))
-    )
-
-    Detectorator = TDetector(
-        "config.toml",
-        Video_file,
-        csvfilename,
-        size=32,
-        net="Models/yolov8n.onnx",
-        show=False,
-    )
-    print("Starting")
-    startjob = datetime.datetime.now()
-    count = Detectorator.run()
-    duration = datetime.datetime.now() - startjob
-    factor = Detectorator.factorspeed(duration)
-
-    print(f"Le système à denombrer {count} Personnes entrante")
-    print(f"Le job a pris {duration},(x{factor:.2f})")

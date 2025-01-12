@@ -1,34 +1,32 @@
 """Check allthe config on images"""
+
 import cv2
 import numpy as np
 
-
-from anayzer import Analyser
-
+from analyzer import Analyser
 
 
-def load_img(url,video=False):
+def load_img(url, video=False):
     """Load an image to test"""
-    if video :
+    if video:
         cam = cv2.VideoCapture(url)
-        ok , img = cam.read()
+        ok, img = cam.read()
         assert ok, "empty img"
         cam.release()
-    else :
+    else:
         img = cv2.imread(url)
     return img
 
 
-def show(title,img,infos=True):
+def show(title, img, infos=True):
     """Show an image and show details"""
-    if infos :
-        height,width,_ = img.shape
+    if infos:
+        height, width, _ = img.shape
         print(f"{title} : H : {height}, W:{width}")
-    cv2.imshow(title,img)
+    cv2.imshow(title, img)
 
 
-
-if __name__ == "__main__" :
+if __name__ == "__main__":
     analys = Analyser("config.toml")
     analys.open()
 
@@ -36,8 +34,8 @@ if __name__ == "__main__" :
 
     imgurl = input("Image url :")
     print(imgurl.split(".")[-1])
-    image = load_img(imgurl,imgurl.split(".")[-1] == "mp4")
-    show("Base_image",image)
+    image = load_img(imgurl, imgurl.split(".")[-1] == "mp4")
+    show("Base_image", image)
     resize = analys.crop_scale_inferance(image)
-    show("inference image",analys.draw_settings(resize))
+    show("inference image", analys.draw_settings(resize))
     cv2.waitKey(0)

@@ -20,14 +20,14 @@ class Analyser:
                 "maxsize": 150,
                 "trackingDistance": 75,
                 "minWalkingDistance": 5,
-                "maxtrackingDistance": 40,
+                "maxTrackingDistance": 40,
             },
             "fence": {"l": 50, "r": 50, "angle": 20},
         }
 
     def get_max_tracking_dist(self):
         """Return the maxtracking distance parameter for the tracking"""
-        return self.config["filters"]["maxtrackingDistance"]
+        return self.config["filters"]["maxTrackingDistance"]
 
     def open(self, file=None):
         """open and load the config file"""
@@ -65,8 +65,8 @@ class Analyser:
         l, r, t, b = [
             self.config["crop"][v] for v in ("left", "right", "top", "bottom")
         ]
-        img = img[int(h * t / 100): h - int(h * b / 100)]
-        img = img[:, int(w * l / 100): w - int(w * r / 100)]
+        img = img[int(h * t / 100) : h - int(h * b / 100)]
+        img = img[:, int(w * l / 100) : w - int(w * r / 100)]
         # Scale for the inference
         f = 640 / min(img.shape[:2])
         img = cv2.resize(img, None, fx=f, fy=f)
@@ -92,7 +92,7 @@ class Analyser:
                         (d[1] - (0.5 * d[3])) * (height / 640),
                         d[2] * (width / 640),
                         d[3] * (height / 640),
-                    ]
+                    ],dtype=np.int64
                 )
                 x, y, w, h = box
                 mx, my = (x + (w // 2), y + (h // 2))
@@ -150,5 +150,4 @@ class Analyser:
         fr = self.config["fence"]["r"]
         fp = np.array([(0, fl * height / 100), (width, fr * height / 100)])
         img = cv2.line(img, *fp.astype(np.int16), (0, 0, 255), 2)
-
         return img

@@ -1,0 +1,1 @@
+python.exe .\main_args.py .\vide_test.mp4 output.csv

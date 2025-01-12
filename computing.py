@@ -1,15 +1,14 @@
 """computing module"""
 
-
 import queue
 from threading import Thread
 
 import cv2
 
-from anayzer import Analyser
+from analyzer import Analyser
 from fpsmeter import FPSMeter
-from functions import distance,beautifultime
-from static import LIST_COLORS,INFOTIME
+from functions import distance, beautifultime
+from static import LIST_COLORS, INFOTIME
 
 
 class Computing:
@@ -179,12 +178,10 @@ class Computing:
                     # if ord("q")==cv2.waitKey(1) :
                     #    self.stop()
                     if i % (self.videoinfos[0] * 60) == 0:
-                        self.peoplefifo.put(
-                            (i // (self.videoinfos[0]), self.counter)
-                        )
+                        self.peoplefifo.put((i // (self.videoinfos[0]), self.counter))
 
                     if self.show:
-                        cv2.imshow("image",self.draw(img, detect))
+                        cv2.imshow("image", self.draw(img, detect))
                         cv2.waitKey(10)
 
                     self.fps.update()

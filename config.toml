@@ -5,9 +5,10 @@ top = 0
 bottom = 0
 
 [filters]
-minsize = 150
+maxsize = 150
 trackingDistance = 75
 minWalkingDistance = 5
+maxTrackingDistance = 40
 
 [fence]
 l = 25

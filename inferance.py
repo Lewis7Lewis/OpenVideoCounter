@@ -7,11 +7,10 @@ import cv2
 import numpy as np
 import onnxruntime as onx
 
-from anayzer import Analyser
+from analyzer import Analyser
 from fpsmeter import FPSMeter
 from functions import beautifultime
 from static import INFOTIME
-
 
 
 sess_options = onx.SessionOptions()
