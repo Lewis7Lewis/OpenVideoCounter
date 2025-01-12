@@ -406,7 +406,7 @@ class Computing:
                     #    self.stop()
                     if i % (self.videoinfos[0] * 60) == 0:
                         self.peoplefifo.put(
-                            (i // (60 * self.videoinfos[0]), self.counter)
+                            (i // (self.videoinfos[0]), self.counter)
                         )
 
                     if self.show:
@@ -524,7 +524,7 @@ class TDetector:
             self.loger.stop()
 
         self.loger.rec(
-            self.cam.frame_count / (self.cam.framerate * 60), self.compute.counter
+            self.cam.frame_count / (self.cam.framerate), self.compute.counter
         )
         self.loger.close()
 
