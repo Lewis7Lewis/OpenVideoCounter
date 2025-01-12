@@ -5,32 +5,7 @@ import numpy as np
 import tomlkit
 
 
-def determinant(u, v):
-    """Calculate the determinant of a 2scalar vector"""
-    return u[0] * v[1] - u[1] * v[0]
-
-
-def vect(a: tuple, b: tuple) -> tuple:
-    """Calculate the vector of a 2 points"""
-    return (b[0] - a[0], b[1] - a[1])
-
-
-def distance(a, b):
-    """calculate the euclerien distance(norm L2)"""
-    return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5
-
-
-def intersects(s0, s1):
-    """Check if to line intersect"""
-    dx0 = s0[1][0] - s0[0][0]
-    dx1 = s1[1][0] - s1[0][0]
-    dy0 = s0[1][1] - s0[0][1]
-    dy1 = s1[1][1] - s1[0][1]
-    p0 = dy1 * (s1[1][0] - s0[0][0]) - dx1 * (s1[1][1] - s0[0][1])
-    p1 = dy1 * (s1[1][0] - s0[1][0]) - dx1 * (s1[1][1] - s0[1][1])
-    p2 = dy0 * (s0[1][0] - s1[0][0]) - dx0 * (s0[1][1] - s1[0][1])
-    p3 = dy0 * (s0[1][0] - s1[1][0]) - dx0 * (s0[1][1] - s1[1][1])
-    return (p0 * p1 <= 0) & (p2 * p3 <= 0)
+from functions import distance, intersects, determinant, vect
 
 
 class Analyser:
@@ -45,12 +20,13 @@ class Analyser:
                 "maxsize": 150,
                 "trackingDistance": 75,
                 "minWalkingDistance": 5,
-                "maxtrackingDistance" : 40
+                "maxtrackingDistance": 40,
             },
             "fence": {"l": 50, "r": 50, "angle": 20},
         }
 
     def get_max_tracking_dist(self):
+        """Return the maxtracking distance parameter for the tracking"""
         return self.config["filters"]["maxtrackingDistance"]
 
     def open(self, file=None):
@@ -89,8 +65,8 @@ class Analyser:
         l, r, t, b = [
             self.config["crop"][v] for v in ("left", "right", "top", "bottom")
         ]
-        img = img[int(h * t / 100) : h - int(h * b / 100)]
-        img = img[:, int(w * l / 100) : w - int(w * r / 100)]
+        img = img[int(h * t / 100): h - int(h * b / 100)]
+        img = img[:, int(w * l / 100): w - int(w * r / 100)]
         # Scale for the inference
         f = 640 / min(img.shape[:2])
         img = cv2.resize(img, None, fx=f, fy=f)
@@ -122,10 +98,10 @@ class Analyser:
                 mx, my = (x + (w // 2), y + (h // 2))
                 fl = self.config["fence"]["l"]
                 fr = self.config["fence"]["r"]
-                fy = ((mx / width) * (fr - fl) + fl) * height/100
+                fy = ((mx / width) * (fr - fl) + fl) * height / 100
                 if (
                     abs(my - fy) >= self.config["filters"]["trackingDistance"]
-                ):  ##position filtering
+                ):  # position filtering
                     continue
                 if (
                     w >= self.config["filters"]["maxsize"]
@@ -173,50 +149,6 @@ class Analyser:
         fl = self.config["fence"]["l"]
         fr = self.config["fence"]["r"]
         fp = np.array([(0, fl * height / 100), (width, fr * height / 100)])
-        img = cv2.line(img, *fp.astype(np.int16), (0, 0, 255),2)
+        img = cv2.line(img, *fp.astype(np.int16), (0, 0, 255), 2)
 
         return img
-
-
-if __name__ == "__main__":
-    analys = Analyser("config.toml")
-    analys.open()
-    print(analys.config)
-    shape = np.array([640, 820])  # width,height
-    import matplotlib.pyplot as plt
-
-    midle = shape // 2
-    fig = plt.figure("Travels graph")
-    plt.axline(
-        (0, analys.config["fence"]["l"] * shape[1] / 100),
-        (shape[0], shape[1] * analys.config["fence"]["r"] / 100),
-    )
-    for angle in np.linspace(0, np.pi * 2, 4 * 6, endpoint=False):
-        trajet = np.array([[np.cos(angle), np.sin(angle)], [-np.cos(angle), -np.sin(angle)]])
-        trajet *= analys.config["filters"]["minWalkingDistance"]
-        trajet += midle
-        passing, er = analys.passing_fences(trajet, np.concat([shape[::-1], [0]]))
-        print("state :", passing, er, "points :", trajet, "vector :", (trajet[1] - trajet[0]))
-
-        if passing:
-            plt.quiver(
-                *trajet[0],
-                *(trajet[1] - trajet[0]),
-                color="g",
-                scale=0.2,
-                angles="xy",
-                scale_units="xy"
-            )
-        else:
-            plt.quiver(
-                *trajet[0],
-                *(trajet[1] - trajet[0]),
-                color="r",
-                scale=0.2,
-                angles="xy",
-                scale_units="xy"
-            )
-    # plt.axis('equal')
-    plt.xlim(0, shape[0])
-    plt.ylim(shape[1], 0)
-    plt.show()
