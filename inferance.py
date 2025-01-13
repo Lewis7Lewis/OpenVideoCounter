@@ -28,7 +28,7 @@ provider = [
     ("CUDAExecutionProvider", cuda_ep_option)
 ]  # ('TensorrtExecutionProvider',trt_ep_options),
 
-provider = onx.get_available_providers()
+#provider = onx.get_available_providers()
 
 
 class Inferance:
