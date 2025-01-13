@@ -1,5 +1,6 @@
 """loger Module"""
 
+from math import inf
 import queue
 from threading import Thread
 import csv
@@ -39,7 +40,7 @@ class Loger:
         """The threaded main process"""
         while not self.stopped:
             t, p = self.fifo.get(True)
-            if t == "end":
+            if t == inf:
                 self.stop()
             else:
                 self.rec(t, p)

@@ -1,7 +1,8 @@
 """Inference module"""
-
+from math import inf
 import queue
 from threading import Thread
+import time
 
 import cv2
 import numpy as np
@@ -11,6 +12,8 @@ from analyzer import Analyser
 from fpsmeter import FPSMeter
 from functions import beautifultime
 from static import INFOTIME
+
+
 
 
 sess_options = onx.SessionOptions()
@@ -28,7 +31,7 @@ provider = [
     ("CUDAExecutionProvider", cuda_ep_option)
 ]  # ('TensorrtExecutionProvider',trt_ep_options),
 
-#provider = onx.get_available_providers()
+provider = onx.get_available_providers()
 
 
 class Inferance:
@@ -42,7 +45,12 @@ class Inferance:
         videoinfos=None,
         net="yolov8n.onnx",
         size=30,
+        index = None
     ) -> None:
+        if index is not None :
+            self.index = str(index)
+        else :
+            self.index = ""
         self.size = size
         self.analys = analys
         self.fps = FPSMeter()
@@ -83,7 +91,7 @@ class Inferance:
             try:
                 i, img = self.imgsfifo.get(True, 1)
 
-                if i == "end":
+                if i == inf :
                     self.do_batch()
                     self.predfifo.put((i, [], []), True)
                     print("[End INFERANCE]")
@@ -97,9 +105,9 @@ class Inferance:
                 if len(self.batch) == self.size:
                     self.do_batch()
                     self.batch = []
-                if i != "end" and i % (INFOTIME * self.videoinfos[0]) == 0:
+                if i != inf and i % (INFOTIME * self.videoinfos[0]) == 0:
                     print(
-                        f"Inference : {i} images ({beautifultime(i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f})"
+                        f"Inference {self.index}: {i} images ({beautifultime(i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f})"
                     )
 
     def do_batch(self):
@@ -109,6 +117,17 @@ class Inferance:
             predictions = self.predict([img for _, img in self.batch])
             self.fps.update(len(self.batch))
             for (i, img), prediction in zip(self.batch, predictions[0]):
+                wait = not self.predfifo.empty()
+                if wait :
+                    wait = wait and self.predfifo.queue[0][0] < i-1
+                while  wait  :
+                    time.sleep(0.001)
+                    wait = not self.predfifo.empty()
+                    if wait :
+                        wait = wait and self.predfifo.queue[0][0] < i-1
+                        #print("waiting",self.predfifo.queue[0][0],i)
+                    
+                #print("adding",i)
                 self.predfifo.put((i, img, prediction), True)
 
     def stop(self):

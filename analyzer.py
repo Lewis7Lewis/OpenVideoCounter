@@ -8,26 +8,93 @@ import tomlkit
 from functions import distance, intersects, determinant, vect
 
 
+class Crops:
+    """Saving parameters of croping"""
+    left = 0
+    right = 0
+    top = 0
+    bottom = 0
+
+    def to_dict(self):
+        """to dict for saving"""
+        return {"left": self.left, "right": self.right, "top": self.top, "bottom": self.bottom}
+    
+    def from_dict(self,dic:dict):
+        """From dic to load"""
+        self.left = dic.get("left",self.left)
+        self.right = dic.get("right",self.right)
+        self.top = dic.get("top",self.top)
+        self.bottom = dic.get("bottom",self.bottom)
+
+class Filters:
+    """Saving Filters parameters"""
+    maxsize =150
+    tracking_distance = 75
+    min_walking_distance =5
+    max_tracking_distance = 40
+
+    def to_dict(self):
+        """To dict for saving"""
+        return {
+                "maxsize": self.maxsize,
+                "trackingDistance": self.tracking_distance,
+                "minWalkingDistance": self.min_walking_distance,
+                "maxTrackingDistance": self.max_tracking_distance,
+            }
+    
+    def from_dict(self,dic:dict):
+        """From dict to init"""
+        self.maxsize = dic.get("maxsize",self.maxsize)
+        self.tracking_distance = dic.get("trackingDistance",self.tracking_distance)
+        self.min_walking_distance = dic.get("minWalkingDistance",self.min_walking_distance)
+        self.max_tracking_distance = dic.get("maxTrackingDistance",self.max_tracking_distance)
+
+class Fence :
+    """Fence parameters class"""
+    l = 50
+    r = 50
+    angle = 20
+
+    def to_dict(self):
+        """To dict parameters"""
+        return {"l": 50, "r": 50, "angle": 20}
+    
+    def from_dict(self,dic:dict):
+        """Load from dict"""
+        self.l = dic.get("l",self.l)
+        self.r = dic.get("r",self.r)
+        self.angle = dic.get("angle",self.angle)
+
 class Analyser:
     """The Analyser hold all computation method link to config file"""
 
     def __init__(self, file=None):
 
         self.configfile = file
+        self.config = {}
+        self.filters = Filters()
+        self.crops = Crops()
+        self.fence = Fence()
+        self.to_dict()
+
+    def to_dict(self):
+        """To save parameters"""
         self.config = {
-            "crop": {"left": 0, "right": 0, "top": 0, "bottom": 0},
-            "filters": {
-                "maxsize": 150,
-                "trackingDistance": 75,
-                "minWalkingDistance": 5,
-                "maxTrackingDistance": 40,
-            },
-            "fence": {"l": 50, "r": 50, "angle": 20},
+            "crop": self.crops.to_dict(),
+            "filters": self.filters.to_dict(),
+            "fence": self.fence.to_dict(),
         }
+        return self.config
+    
+    def from_dict(self,dic:dict):
+        """Import parameters"""
+        self.crops.from_dict(dic.get("crop",{}))
+        self.filters.from_dict(dic.get("filters",{}))
+        self.fence.from_dict(dic.get("fence",{}))
 
     def get_max_tracking_dist(self):
         """Return the maxtracking distance parameter for the tracking"""
-        return self.config["filters"]["maxTrackingDistance"]
+        return self.filters.max_tracking_distance
 
     def open(self, file=None):
         """open and load the config file"""
@@ -47,13 +114,12 @@ class Analyser:
 
     def check(self):
         """Check all the paramters"""
-        conf = self.config
-        crop = conf["crop"]
+        crop = self.crops
         ok = True
-        if crop["left"] + crop["right"] >= 100:
+        if crop.left + crop.right >= 100:
             ok = False
             print("Error : too much crop on left right")
-        if crop["top"] + crop["bottom"] >= 100:
+        if crop.top + crop.bottom >= 100:
             ok = False
             print("Error : too much crop on top bottom")
 
@@ -62,9 +128,7 @@ class Analyser:
     def crop_scale_inferance(self, img):
         """Prepare the image to inference by croping and scaling"""
         h, w, _ = img.shape
-        l, r, t, b = [
-            self.config["crop"][v] for v in ("left", "right", "top", "bottom")
-        ]
+        l, r, t, b = self.crops.left,self.crops.right,self.crops.top,self.crops.bottom
         img = img[int(h * t / 100) : h - int(h * b / 100)]
         img = img[:, int(w * l / 100) : w - int(w * r / 100)]
         # Scale for the inference
@@ -96,8 +160,8 @@ class Analyser:
                 )
                 x, y, w, h = box
                 mx, my = (x + (w // 2), y + (h // 2))
-                fl = self.config["fence"]["l"]
-                fr = self.config["fence"]["r"]
+                fl = self.fence.l
+                fr = self.fence.r
                 fy = ((mx / width) * (fr - fl) + fl) * height / 100
                 if (
                     abs(my - fy) >= self.config["filters"]["trackingDistance"]
@@ -124,12 +188,12 @@ class Analyser:
     def passing_fences(self, trajet, shape):
         """Check with the config if a traject path pass the fence"""
         dt = distance(*trajet)
-        if not dt >= self.config["filters"]["minWalkingDistance"]:
+        if not dt >= self.filters.min_walking_distance:
             return False, "minWalkingDistance"
 
         [height, width, _] = shape
-        fl = self.config["fence"]["l"]
-        fr = self.config["fence"]["r"]
+        fl = self.fence.l
+        fr = self.fence.r
         fp = np.array([(0, fl * height / 100), (width, fr * height / 100)])
 
         if not intersects(trajet, fp):
@@ -137,7 +201,7 @@ class Analyser:
 
         fv = np.array((-np.sqrt(1 - ((fl - fr) / 100) ** 2), (fl - fr) / 100))
         if not determinant(vect(*trajet), fv) / distance(*trajet) >= np.cos(
-            np.deg2rad(self.config["fence"]["angle"]) / 2
+            np.deg2rad(self.fence.angle) / 2
         ):
             return False, "Not in the aceptence cone"
 
@@ -145,9 +209,9 @@ class Analyser:
 
     def draw_settings(self, img):
         """Draw the fence"""
-        [height, width, _] = img.shape
-        fl = self.config["fence"]["l"]
-        fr = self.config["fence"]["r"]
+        [height, widsth, _] = img.shape
+        fl = self.fence.l
+        fr = self.fence.r
         fp = np.array([(0, fl * height / 100), (width, fr * height / 100)])
         img = cv2.line(img, *fp.astype(np.int16), (0, 0, 255), 2)
         return img

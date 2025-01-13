@@ -1,1 +1,1 @@
-python.exe .\main_args.py .\vide_test.mp4 output.csv
+python.exe .\main_args.py Videos/extrait.mp4 Videos/extrait.csv
