@@ -14,11 +14,6 @@ from functions import beautifultime
 from static import INFOTIME
 
 
-
-
-sess_options = onx.SessionOptions()
-sess_options.enable_profiling = False
-sess_options.execution_mode = onx.ExecutionMode.ORT_PARALLEL
 trt_ep_options = {
     "trt_timing_cache_enable": True,
     "trt_max_workspace_size": 2147483648,
@@ -32,7 +27,6 @@ provider = [
 ]  # ('TensorrtExecutionProvider',trt_ep_options),
 
 provider = onx.get_available_providers()
-
 
 class Inferance:
     """A threaded worker to perform detection inference"""
@@ -60,9 +54,22 @@ class Inferance:
             self.videoinfos = videoinfos
         self.imgsfifo = imgsfifo
         self.predfifo = predfifo
+
+
+        ### Net 
+        sess_options = onx.SessionOptions()
+        sess_options.enable_profiling = False
+        sess_options.execution_mode = onx.ExecutionMode.ORT_PARALLEL
+        
+
+
         self.net = onx.InferenceSession(
             net, providers=provider, sess_options=sess_options
         )  # ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+        self.io_binds = self.net.io_binding()
+
+
         self.input_name = self.net.get_inputs()[0].name
         self.label_name = self.net.get_outputs()[0].name
         # self.stopped is set to False when frames are being read from self.vcap stream
@@ -76,9 +83,11 @@ class Inferance:
     def predict(self, imgs):
         """Make the prediction from the model"""
         blob = cv2.dnn.blobFromImages(imgs, 1 / 255, (640, 640), (0, 0, 0), swapRB=True)
-        return self.net.run(
-            [self.label_name], {self.input_name: blob.astype(np.float32)}
-        )
+        self.io_binds.bind_cpu_input(self.input_name,blob.astype(np.float32))
+        self.io_binds.bind_output(self.label_name)
+        self.net.run_with_iobinding(self.io_binds)
+        data = self.io_binds.copy_outputs_to_cpu()
+        return data
 
     def start(self):
         """Start the worker"""
@@ -119,15 +128,17 @@ class Inferance:
             for (i, img), prediction in zip(self.batch, predictions[0]):
                 wait = not self.predfifo.empty()
                 if wait :
-                    wait = wait and self.predfifo.queue[0][0] < i-1
+                    wait = wait and self.predfifo.queue[-1][0] < i-1
                 while  wait  :
-                    time.sleep(0.001)
+                    time.sleep(0.01)
                     wait = not self.predfifo.empty()
                     if wait :
-                        wait = wait and self.predfifo.queue[0][0] < i-1
-                        #print("waiting",self.predfifo.queue[0][0],i)
-                    
-                #print("adding",i)
+                        print("Waiting",i,self.predfifo.queue[-1][0])
+                        for a in self.predfifo.queue :
+                            print("#",a[0])
+                        
+
+                        wait = wait and self.predfifo.queue[-1][0] < i-1
                 self.predfifo.put((i, img, prediction), True)
 
     def stop(self):

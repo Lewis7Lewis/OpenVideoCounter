@@ -11,7 +11,7 @@ if __name__ == "__main__":
     )
 
     Detectorator = ThreadCounter(
-        "config.bak.toml",
+        "config.toml",
         Video_file,
         csvfilename,
         size=32,

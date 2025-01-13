@@ -18,8 +18,8 @@ class Computing:
 
     def __init__(
         self,
-        predfifo: queue.PriorityQueue,
-        peoplefifo: queue.PriorityQueue,
+        predfifo: queue.Queue,
+        peoplefifo: queue.Queue,
         analys: Analyser,
         videoinfos=None,
         show=False,

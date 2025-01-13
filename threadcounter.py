@@ -20,7 +20,7 @@ class ThreadCounter:
         self.configfile = configfile
         self.logfile = logfile
         self.imgs = queue.PriorityQueue(60)
-        self.preds = queue.PriorityQueue(120)
+        self.preds = queue.Queue(60)
         self.people = queue.Queue(60)
 
         self.analys = Analyser(self.configfile)
@@ -29,7 +29,7 @@ class ThreadCounter:
         videoinfos = self.cam.framerate, self.cam.frame_count
         self.infes = [Inferance(
             self.imgs, self.preds, self.analys, videoinfos, net, size=size,index = i+1
-        ) for i in range(2)]
+        ) for i in range(1)]
         self.compute = Computing(self.preds, self.people, self.analys, videoinfos, show)
         self.loger = Loger(logfile, self.people)
         self.duration = datetime.timedelta(milliseconds=1)

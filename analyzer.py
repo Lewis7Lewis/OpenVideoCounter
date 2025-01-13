@@ -104,10 +104,14 @@ class Analyser:
         with open(file, "r", encoding="utf-8") as fic:
             self.config = dict(tomlkit.load(fic))
 
+        self.from_dict(self.config)
+
     def save(self, file=None):
         """Save the config file"""
         if file is None:
             file = self.configfile
+
+        self.to_dict()
 
         with open(file, "w", encoding="utf-8") as fic:
             tomlkit.dump(self.config, fic)
@@ -209,7 +213,7 @@ class Analyser:
 
     def draw_settings(self, img):
         """Draw the fence"""
-        [height, widsth, _] = img.shape
+        [height, width, _] = img.shape
         fl = self.fence.l
         fr = self.fence.r
         fp = np.array([(0, fl * height / 100), (width, fr * height / 100)])
