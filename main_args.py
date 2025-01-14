@@ -28,7 +28,7 @@ Detectorator = ThreadCounter(
     CSVFILENAME,
     size=32,
     net="Models/yolov8n.onnx",
-    show=True,
+    show=False,
 )
 count, duration = Detectorator.run()
 factor = Detectorator.factorspeed()

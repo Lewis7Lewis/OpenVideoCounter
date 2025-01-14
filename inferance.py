@@ -17,16 +17,19 @@ from static import INFOTIME
 trt_ep_options = {
     "trt_timing_cache_enable": True,
     "trt_max_workspace_size": 2147483648,
-    "trt_dla_enable": True,
+    "trt_fp16_enable": True,
+    "trt_engine_cache_enable": True,
+    "trt_engine_cache_path": ".\trt_engines",
 }
 cuda_ep_option = {}
 
 
 provider = [
-    ("CUDAExecutionProvider", cuda_ep_option)
-]  # ('TensorrtExecutionProvider',trt_ep_options),
+    ("CUDAExecutionProvider", cuda_ep_option),("CUDAExecutionProvider", cuda_ep_option),
+  #('TensorrtExecutionProvider',trt_ep_options)
+  ]
 
-provider = onx.get_available_providers()
+#provider = onx.get_available_providers()
 
 class Inferance:
     """A threaded worker to perform detection inference"""
@@ -62,7 +65,7 @@ class Inferance:
         ### Net 
         sess_options = onx.SessionOptions()
         sess_options.enable_profiling = False
-        sess_options.execution_mode = onx.ExecutionMode.ORT_PARALLEL
+        #sess_options.execution_mode = onx.ExecutionMode.ORT_PARALLEL
         
 
 
@@ -129,19 +132,8 @@ class Inferance:
             predictions = self.predict([img for _, img in self.batch])
             self.fps.update(len(self.batch))
             for (i, img), prediction in zip(self.batch, predictions[0]):
-                wait = not self.predfifo.empty()
-                if wait :
-                    wait = wait and self.predfifo.queue[-1][0] < i-1
-                while  wait  :
-                    time.sleep(0.01)
-                    wait = not self.predfifo.empty()
-                    if wait :
-                        print("Waiting",i,self.predfifo.queue[-1][0])
-                        for a in self.predfifo.queue :
-                            print("#",a[0])
-                        
-
-                        wait = wait and self.predfifo.queue[-1][0] < i-1
+                while not self.predfifo.empty() and  self.predfifo.queue[-1][0] < i-1 :
+                    time.sleep(0.001)
                 self.predfifo.put((i, img, prediction), True)
 
     def stop(self):
