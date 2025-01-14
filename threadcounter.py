@@ -6,7 +6,7 @@ import time
 
 from analyzer import Analyser
 from computing import Computing
-from inferance import Inferance
+from inferance import Inferance, provider
 from reader import Reader
 from loger import Loger
 
@@ -19,7 +19,7 @@ class ThreadCounter:
     ) -> None:
         self.configfile = configfile
         self.logfile = logfile
-        self.imgs = queue.Queue(60)
+        self.imgs = queue.PriorityQueue(60)
         self.preds = queue.Queue(60)
         self.people = queue.Queue(60)
 
@@ -27,9 +27,9 @@ class ThreadCounter:
         self.analys.open()
         self.cam = Reader(url, self.analys, self.imgs)
         videoinfos = self.cam.framerate, self.cam.frame_count
-        self.infe = Inferance(
-            self.imgs, self.preds, self.analys, videoinfos, net, size=size
-        )
+        self.infes = [Inferance(
+            self.imgs, self.preds, self.analys, videoinfos, net, size=size,index = i,providers= [p]
+        ) for i, p in enumerate(provider)]
         self.compute = Computing(self.preds, self.people, self.analys, videoinfos, show)
         self.loger = Loger(logfile, self.people)
         self.duration = datetime.timedelta(milliseconds=1)
@@ -38,7 +38,8 @@ class ThreadCounter:
         """the starting function"""
         starttime = datetime.datetime.now()
         self.cam.start()
-        self.infe.start()
+        for infe in self.infes :
+            infe.start()
         self.compute.start()
         self.loger.start()
         try:
@@ -46,7 +47,8 @@ class ThreadCounter:
                 time.sleep(0.2)
         except KeyboardInterrupt:
             self.cam.stop()
-            self.infe.stop()
+            for infe in self.infes :
+                infe.stop()
             self.compute.stop()
             self.loger.stop()
 

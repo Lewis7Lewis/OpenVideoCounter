@@ -2,6 +2,7 @@
 
 import queue
 from threading import Thread
+from math import inf
 
 import cv2
 
@@ -57,13 +58,13 @@ class Reader:
                     (self.i, self.analys.crop_scale_inferance(self.frame)), True
                 )
             if self.grabbed is False:
-                self.fifo.put(("end", []), True)
+                self.fifo.put((inf, []), True)
                 print("[Exiting] No more frames to read")
                 self.stopped = True
                 break
             if self.i % (INFOTIME * self.framerate) == 0:
                 print(
-                    f"Reader    : {self.i} images ({beautifultime(self.i//self.framerate)}) (FPS:{self.fps.fps:.2f})"
+                    f"Reader     : {self.i} images ({beautifultime(self.i//self.framerate)}) (FPS:{self.fps.fps:.2f})"
                 )
 
         self.vcap.release()

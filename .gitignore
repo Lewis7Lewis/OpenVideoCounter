@@ -3,5 +3,6 @@
 /Videos
 /__pycache__
 /.venv
+/trt_engines
 .gitignore
 config.bak.toml

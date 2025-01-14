@@ -1,7 +1,9 @@
 """computing module"""
 
+from math import inf
 import queue
 from threading import Thread
+import time
 
 import cv2
 
@@ -42,7 +44,7 @@ class Computing:
         # while the program is executing
 
         # predefine
-        self.i = None
+        self.i = 0
 
     def tracking(self, detect):
         """The tracking function to calculate paths"""
@@ -159,12 +161,16 @@ class Computing:
         """the threaded main process"""
         while not self.stopped:
             try:
+                i = self.i
+                while not self.predfifo.empty() and self.predfifo.queue[0] == inf and self.predfifo.queue[0] != self.i+1 :
+                    time.sleep(0.001)
+                
                 i, img, prediction = self.predfifo.get(True, 1)
             except queue.Empty:
                 pass
             else:
-                if i == "end":
-                    self.peoplefifo.put(("end", 0))
+                if i == inf:
+                    self.peoplefifo.put((i // (self.videoinfos[0]), 0))
                     print("END Computing")
                     self.stop()
                 else:
@@ -177,7 +183,7 @@ class Computing:
                     # cv2.imshow("image",self.draw(img,detect))
                     # if ord("q")==cv2.waitKey(1) :
                     #    self.stop()
-                    if i % (self.videoinfos[0] * 60) == 0:
+                    if self.i % (self.videoinfos[0] * 60) == 0:
                         self.peoplefifo.put((i // (self.videoinfos[0]), self.counter))
 
                     if self.show:
@@ -185,9 +191,9 @@ class Computing:
                         cv2.waitKey(10)
 
                     self.fps.update()
-                    if i % (INFOTIME * self.videoinfos[0]) == 0:
+                    if self.i % (INFOTIME * self.videoinfos[0]) == 0:
                         print(
-                            f"Computing : {i} images ({beautifultime(i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f}) ; count {self.counter},"
+                            f"Computing  : {i} images ({beautifultime(self.i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f}) ; count {self.counter},"
                         )
 
     def stop(self):

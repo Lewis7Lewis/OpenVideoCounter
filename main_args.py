@@ -23,7 +23,7 @@ VIDEO_FILE = str(args.Videofilename.absolute())
 CSVFILENAME = str(args.Output_file.absolute())
 
 Detectorator = ThreadCounter(
-    "config.toml",
+    "config.bak.toml",
     VIDEO_FILE,
     CSVFILENAME,
     size=32,
