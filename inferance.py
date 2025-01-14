@@ -39,7 +39,8 @@ class Inferance:
         videoinfos=None,
         net="yolov8n.onnx",
         size=30,
-        index = None
+        index = None,
+        providers = None
     ) -> None:
         if index is not None :
             self.index = str(index)
@@ -55,6 +56,8 @@ class Inferance:
         self.imgsfifo = imgsfifo
         self.predfifo = predfifo
 
+        if providers is None :
+            providers = provider
 
         ### Net 
         sess_options = onx.SessionOptions()
@@ -64,7 +67,7 @@ class Inferance:
 
 
         self.net = onx.InferenceSession(
-            net, providers=provider, sess_options=sess_options
+            net, providers=providers, sess_options=sess_options
         )  # ['CUDAExecutionProvider', 'CPUExecutionProvider']
 
         self.io_binds = self.net.io_binding()

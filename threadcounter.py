@@ -6,7 +6,7 @@ import time
 
 from analyzer import Analyser
 from computing import Computing
-from inferance import Inferance
+from inferance import Inferance, provider
 from reader import Reader
 from loger import Loger
 
@@ -28,8 +28,8 @@ class ThreadCounter:
         self.cam = Reader(url, self.analys, self.imgs)
         videoinfos = self.cam.framerate, self.cam.frame_count
         self.infes = [Inferance(
-            self.imgs, self.preds, self.analys, videoinfos, net, size=size,index = i+1
-        ) for i in range(1)]
+            self.imgs, self.preds, self.analys, videoinfos, net, size=size,index = i,providers= [p]
+        ) for i, p in enumerate(provider)]
         self.compute = Computing(self.preds, self.people, self.analys, videoinfos, show)
         self.loger = Loger(logfile, self.people)
         self.duration = datetime.timedelta(milliseconds=1)
