@@ -1,0 +1,16 @@
+[crop]
+left = 0
+right = 0
+top = 0
+bottom = 0
+
+[filters]
+maxsize = 150
+trackingDistance = 75
+minWalkingDistance = 5
+maxTrackingDistance = 40
+
+[fence]
+l = 25
+r = 75
+angle = 160 #opening angle to says it's a people passing_fences [0:180] °
