@@ -26,7 +26,7 @@ Detectorator = ThreadCounter(
     "config.bak.toml",
     VIDEO_FILE,
     CSVFILENAME,
-    size=32,
+    size=30,
     net="Models/yolov8n.onnx",
     show=False,
 )
@@ -35,3 +35,5 @@ factor = Detectorator.factorspeed()
 
 print(f"Le système à denombrer {count} Personnes entrante")
 print(f"Le job a pris {duration},(x{factor:.2f})")
+
+Detectorator.show_graph()

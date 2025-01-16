@@ -1,7 +1,7 @@
 """All Statics definitions like colors, labels
 """
 
-INFOTIME = 10
+INFOTIME = 5
 
 LIST_COLORS = [
     (0, 0, 255),

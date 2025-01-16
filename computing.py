@@ -163,7 +163,7 @@ class Computing:
             try:
                 i = self.i
                 while not self.predfifo.empty() and self.predfifo.queue[0] == inf and self.predfifo.queue[0] != self.i+1 :
-                    time.sleep(0.001)
+                    time.sleep(0.0001)
                 
                 i, img, prediction = self.predfifo.get(True, 1)
             except queue.Empty:
@@ -179,7 +179,6 @@ class Computing:
                     self.tracking(detect)
                     self.clean_people()
                     self.count_people(img)
-
                     # cv2.imshow("image",self.draw(img,detect))
                     # if ord("q")==cv2.waitKey(1) :
                     #    self.stop()

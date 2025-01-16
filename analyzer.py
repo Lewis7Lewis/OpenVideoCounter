@@ -1,11 +1,14 @@
 """The analyser setting that make the specific calculation of the counter"""
 
+import time
 import cv2
 import numpy as np
 import tomlkit
 
 
-from functions import distance, intersects, determinant, vect
+from functions import distance, intersects, determinant, vect, non_max_suppression_fast
+
+
 
 
 class Crops:
@@ -181,12 +184,14 @@ class Analyser:
 
         # Apply NMS (Non-maximum suppression)
         detect = []
-        result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
-        if len(result_boxes) > 0:
+        #result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
+        
+        if False and len(result_boxes) > 0:
             for index in result_boxes:  # pylint: disable=E1133
                 box = np.array(boxes[index], dtype=np.int16)
                 detect.append(box)
 
+        result_boxes = non_max_suppression_fast(np.array(boxes), 0.45)
         return detect
 
     def passing_fences(self, trajet, shape):
