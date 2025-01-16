@@ -39,34 +39,61 @@ class ThreadCounter:
 
         self.graph = Graph(self.imgs, self.preds, self.people)
 
-    def run(self):
+        self.starttime = 0
+
+        self.runing= False
+
+    def start(self):
         """the starting function"""
-        starttime = datetime.datetime.now()
+        self.runing =True
+        self.starttime = datetime.datetime.now()
         self.graph.add_rec()
         self.cam.start()
         for infe in self.infes :
             infe.start()
         self.compute.start()
         self.loger.start()
+
+    def run(self):
+        self.start()
         try:
-            while self.compute.t.is_alive():
+            while self.runing and self.compute.t.is_alive():
                 self.graph.add_rec()
-                time.sleep(0.1)
+                time.sleep(0.01)
         except KeyboardInterrupt:
-            self.cam.stop()
-            for infe in self.infes :
-                infe.stop()
-            self.compute.stop()
-            self.loger.stop()
+            print("Interuption")
+            time.sleep(0.1)
+
+        self.close()
+
+        return self.get_result()
+    
+    def pourcent(self):
+        return self.compute.i / self.cam.frame_count
+    
+    def stop(self):
+        print("Stop")
+        self.runing = False
+        self.close()
+
+    def get_result(self):
+        return self.compute.counter, self.duration
+    
+
+    def close(self):
+        print("Close")
+        self.runing = False
+        self.cam.stop()
+        for infe in self.infes :
+            infe.stop()
+        self.compute.stop()
+        self.loger.stop()
 
         self.loger.rec(
             self.cam.frame_count / (self.cam.framerate), self.compute.counter
         )
         self.loger.close()
-
-        self.duration = datetime.datetime.now() - starttime
-
-        return self.compute.counter, self.duration
+        self.duration = datetime.datetime.now() - self.starttime
 
     def factorspeed(self):
         """To calculatio the speed of calculus"""

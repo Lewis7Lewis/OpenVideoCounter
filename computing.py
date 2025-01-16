@@ -197,6 +197,7 @@ class Computing:
 
     def stop(self):
         """stop the worker"""
+        print("[Computing Stop]")
         self.stopped = True
 
     def join(self):

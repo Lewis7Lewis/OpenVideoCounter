@@ -138,6 +138,7 @@ class Inferance:
 
     def stop(self):
         """Stop the worker"""
+        print(f"[Inferance {self.index} Stop]")
         self.stopped = True
 
     def join(self):

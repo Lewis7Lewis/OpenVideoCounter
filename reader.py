@@ -75,6 +75,7 @@ class Reader:
 
     def stop(self):
         """Stop the worker"""
+        print("[Reader Stop]")
         self.stopped = True
 
     def join(self):
