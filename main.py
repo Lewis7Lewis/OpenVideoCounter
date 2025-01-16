@@ -1,6 +1,8 @@
 """The main program to use the counter"""
 
 from tkinter import filedialog
+from tkinter import messagebox
+
 
 from threadcounter import ThreadCounter
 
@@ -9,7 +11,7 @@ if __name__ == "__main__":
     csvfilename = filedialog.asksaveasfilename(
         title="Save CSV name", filetypes=(("CSV File", "*.csv"), ("all files", "*.*"))
     )
-
+    affichage = messagebox.askyesno("Affichage", "Voulez-vous afficher la vidéo")
     Detectorator = ThreadCounter(
         "config.toml",
         Video_file,
@@ -24,3 +26,6 @@ if __name__ == "__main__":
 
     print(f"Le système à denombrer {count} Personnes entrante")
     print(f"Le job a pris {duration},(x{factor:.2f})")
+
+    Detectorator.show_graph()
+
