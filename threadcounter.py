@@ -18,16 +18,14 @@ class ThreadCounter:
     """The treaded Detector the manages alls workers"""
 
     def __init__(
-        self, configfile, url, logfile, size=30, net="yolov8n.onnx", show=False
+        self, analys:Analyser, url, logfile, size=30, net="yolov8n.onnx", show=False
     ) -> None:
-        self.configfile = configfile
         self.logfile = logfile
         self.imgs = queue.Queue(60)
         self.preds = queue.Queue(120)
         self.people = queue.Queue(60)
 
-        self.analys = Analyser(self.configfile)
-        self.analys.open()
+        self.analys =analys
         self.cam = Reader(url, self.analys, self.imgs)
         videoinfos = self.cam.framerate, self.cam.frame_count
         self.infes = [Inferance(
@@ -57,7 +55,7 @@ class ThreadCounter:
     def run(self):
         self.start()
         try:
-            while self.runing and self.compute.t.is_alive():
+            while self.is_running():
                 self.graph.add_rec()
                 time.sleep(0.01)
         except KeyboardInterrupt:
@@ -67,6 +65,10 @@ class ThreadCounter:
         self.close()
 
         return self.get_result()
+    
+    def is_running(self):
+        self.runing = self.runing and self.loger.t.is_alive()
+        return self.runing
     
     def pourcent(self):
         return self.compute.i / self.cam.frame_count

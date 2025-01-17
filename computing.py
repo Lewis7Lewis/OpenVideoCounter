@@ -162,15 +162,17 @@ class Computing:
         while not self.stopped:
             try:
                 i = self.i
-                while not self.predfifo.empty() and self.predfifo.queue[0] == inf and self.predfifo.queue[0] != self.i+1 :
-                    time.sleep(0.0001)
-                
+                while not self.predfifo.empty() and (self.predfifo.queue[0][0] != self.i+1 and not (self.i == self.videoinfos[1]-1 and self.predfifo.queue[0][0] == inf))  :
+                    time.sleep(0.01)
+                    print("not good last", self.predfifo.queue[0][0],self.i+1)
+
+                ## Need to be check to not loose last frames
                 i, img, prediction = self.predfifo.get(True, 1)
             except queue.Empty:
                 pass
             else:
-                if i == inf:
-                    self.peoplefifo.put((i // (self.videoinfos[0]), 0))
+                if i == inf :
+                    self.peoplefifo.put((inf, 0))
                     print("END Computing")
                     self.stop()
                 else:

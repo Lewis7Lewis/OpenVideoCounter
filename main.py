@@ -5,6 +5,7 @@ from tkinter import messagebox
 
 
 from threadcounter import ThreadCounter
+from analyzer import Analyser
 
 if __name__ == "__main__":
     Video_file = filedialog.askopenfilename(title="Select a VideoFile")
@@ -12,8 +13,11 @@ if __name__ == "__main__":
         title="Save CSV name", filetypes=(("CSV File", "*.csv"), ("all files", "*.*"))
     )
     affichage = messagebox.askyesno("Affichage", "Voulez-vous afficher la vidéo")
+    analyse = Analyser("config.toml")
+    analyse.open()
+
     Detectorator = ThreadCounter(
-        "config.toml",
+        analyse,
         Video_file,
         csvfilename,
         size=32,

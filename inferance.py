@@ -3,6 +3,7 @@ from math import inf
 import queue
 from threading import Thread
 import time
+import os
 
 import cv2
 import numpy as np
@@ -24,12 +25,13 @@ trt_ep_options = {
 cuda_ep_option = {}
 
 
-provider = [
-    ("CUDAExecutionProvider", cuda_ep_option),("CUDAExecutionProvider", cuda_ep_option),
-  #('TensorrtExecutionProvider',trt_ep_options)
-  ]
-
-#provider = onx.get_available_providers()
+if "CUDA" in os.environ :
+    provider = [
+        ("CUDAExecutionProvider", cuda_ep_option),("CUDAExecutionProvider", cuda_ep_option),
+    #('TensorrtExecutionProvider',trt_ep_options)
+    ]
+else :
+    provider = [onx.get_available_providers()[0]]
 
 class Inferance:
     """A threaded worker to perform detection inference"""
@@ -108,9 +110,12 @@ class Inferance:
 
                 if i == inf :
                     self.do_batch()
+                    while not self.predfifo.empty() and  self.predfifo.queue[self.predfifo.qsize()-1][0] != self.videoinfos[1] :
+                        print("wait finish")
+                        time.sleep(0.001)
                     self.predfifo.put((i, [], []), True)
                     print("[End INFERANCE]")
-                    self.stop()
+                    self.stopped = True
                 else:
                     # print(img.shape)
                     self.batch.append((i, img))
