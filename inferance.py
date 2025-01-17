@@ -25,7 +25,7 @@ trt_ep_options = {
 cuda_ep_option = {}
 
 
-if "CUDA" in os.environ :
+if "CUDA_PATH" in os.environ :
     provider = [
         ("CUDAExecutionProvider", cuda_ep_option),("CUDAExecutionProvider", cuda_ep_option),
     #('TensorrtExecutionProvider',trt_ep_options)
@@ -137,7 +137,7 @@ class Inferance:
             predictions = self.predict([img for _, img in self.batch])
             self.fps.update(len(self.batch))
             for (i, img), prediction in zip(self.batch, predictions[0]):
-                while not self.predfifo.empty() and  self.predfifo.queue[-1][0] < i-1 :
+                while not self.predfifo.empty() and  self.predfifo.queue[-1][0] < i-1 or (self.predfifo.empty() and i != 0):
                     time.sleep(0.001)
                 self.predfifo.put((i, img, prediction), True)
 
