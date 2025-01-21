@@ -56,6 +56,7 @@ class Loger:
 
     def stop(self):
         """Stop the worker"""
+        print("[Loger Stop]")
         self.stopped = True
 
     def join(self):

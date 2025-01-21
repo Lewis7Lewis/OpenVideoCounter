@@ -30,7 +30,8 @@ if __name__ == "__main__":
     analys = Analyser("config.toml")
     analys.open()
 
-    assert analys.check()
+    ok,error = analys.check()
+    assert ok, error 
 
     imgurl = input("Image url :")
     print(imgurl.split(".")[-1])

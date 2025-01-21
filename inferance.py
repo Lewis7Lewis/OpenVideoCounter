@@ -3,6 +3,7 @@ from math import inf
 import queue
 from threading import Thread
 import time
+import os
 
 import cv2
 import numpy as np
@@ -24,12 +25,13 @@ trt_ep_options = {
 cuda_ep_option = {}
 
 
-provider = [
-    ("CUDAExecutionProvider", cuda_ep_option),("CUDAExecutionProvider", cuda_ep_option),
-  #('TensorrtExecutionProvider',trt_ep_options)
-  ]
-
-#provider = onx.get_available_providers()
+if "CUDA_PATH" in os.environ :
+    provider = [
+        ("CUDAExecutionProvider", cuda_ep_option),("CUDAExecutionProvider", cuda_ep_option),
+    #('TensorrtExecutionProvider',trt_ep_options)
+    ]
+else :
+    provider = [onx.get_available_providers()[0]]
 
 class Inferance:
     """A threaded worker to perform detection inference"""
@@ -58,17 +60,29 @@ class Inferance:
             self.videoinfos = videoinfos
         self.imgsfifo = imgsfifo
         self.predfifo = predfifo
+        self.predfifo.lastid = 0
 
         if providers is None :
             providers = provider
 
-        ### Net 
+        self.providers = providers
+        self.init_net(net,providers)
+
+        # self.stopped is set to False when frames are being read from self.vcap stream
+        self.stopped = True
+        # reference to the thread for reading next available frame from input stream
+        self.t = Thread(target=self.update, args=())
+        self.t.daemon = True  # daemon threads keep running in the background
+        # while the program is executing
+        self.batch = []
+
+    def init_net(self,net,providers):
+        self.net = net
+                ### Net 
         sess_options = onx.SessionOptions()
         sess_options.enable_profiling = False
         #sess_options.execution_mode = onx.ExecutionMode.ORT_PARALLEL
-        
-
-
+    
         self.net = onx.InferenceSession(
             net, providers=providers, sess_options=sess_options
         )  # ['CUDAExecutionProvider', 'CPUExecutionProvider']
@@ -78,14 +92,20 @@ class Inferance:
 
         self.input_name = self.net.get_inputs()[0].name
         self.label_name = self.net.get_outputs()[0].name
-        # self.stopped is set to False when frames are being read from self.vcap stream
-        self.stopped = True
-        # reference to the thread for reading next available frame from input stream
-        self.t = Thread(target=self.update, args=())
-        self.t.daemon = True  # daemon threads keep running in the background
-        # while the program is executing
-        self.batch = []
 
+    def reset(self,videoinfos=None,net=None,size=None):
+        if net is not None and net != self.net :
+            self.init_net(net,self.providers)
+        if size is not None:
+            self.size = size
+        if videoinfos is None:
+            self.videoinfos = [20, 120000]
+        else:
+            self.videoinfos = videoinfos
+            
+        self.predfifo.lastid = 0
+        self.batch = []
+         
     def predict(self, imgs):
         """Make the prediction from the model"""
         blob = cv2.dnn.blobFromImages(imgs, 1 / 255, (640, 640), (0, 0, 0), swapRB=True)
@@ -108,9 +128,11 @@ class Inferance:
 
                 if i == inf :
                     self.do_batch()
+                    while self.predfifo.lastid < self.videoinfos[1]-1 :
+                        time.sleep(0.001)
                     self.predfifo.put((i, [], []), True)
                     print("[End INFERANCE]")
-                    self.stop()
+                    self.stopped = True
                 else:
                     # print(img.shape)
                     self.batch.append((i, img))
@@ -132,12 +154,14 @@ class Inferance:
             predictions = self.predict([img for _, img in self.batch])
             self.fps.update(len(self.batch))
             for (i, img), prediction in zip(self.batch, predictions[0]):
-                while not self.predfifo.empty() and  self.predfifo.queue[-1][0] < i-1 :
+                while self.predfifo.lastid < i-1 :
                     time.sleep(0.001)
                 self.predfifo.put((i, img, prediction), True)
+                self.predfifo.lastid = i
 
     def stop(self):
         """Stop the worker"""
+        print(f"[Inferance {self.index} Stop]")
         self.stopped = True
 
     def join(self):

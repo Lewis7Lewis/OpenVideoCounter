@@ -5,7 +5,9 @@ import numpy as np
 import tomlkit
 
 
-from functions import distance, intersects, determinant, vect
+from functions import distance, intersects, determinant, vect, non_max_suppression_fast
+
+
 
 
 class Crops:
@@ -119,15 +121,16 @@ class Analyser:
     def check(self):
         """Check all the paramters"""
         crop = self.crops
+        error = ""
         ok = True
         if crop.left + crop.right >= 100:
             ok = False
-            print("Error : too much crop on left right")
+            error += "Error : too much crop on left right\n"
         if crop.top + crop.bottom >= 100:
             ok = False
-            print("Error : too much crop on top bottom")
+            error += "Error : too much crop on top bottom\n"
 
-        return ok
+        return ok,error
 
     def crop_scale_inferance(self, img):
         """Prepare the image to inference by croping and scaling"""
@@ -179,15 +182,19 @@ class Analyser:
                 boxes.append(box)
                 scores.append(max_score)
 
+        boxes = np.array(boxes)
+
         # Apply NMS (Non-maximum suppression)
         detect = []
-        result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
-        if len(result_boxes) > 0:
-            for index in result_boxes:  # pylint: disable=E1133
-                box = np.array(boxes[index], dtype=np.int16)
-                detect.append(box)
+        #result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
+        
+        #if False and len(result_boxes) > 0:
+        #    for index in result_boxes:  # pylint: disable=E1133
+        #        box = np.array(boxes[index], dtype=np.int16)
+        #        detect.append(box)
 
-        return detect
+        result_boxes = non_max_suppression_fast(boxes, 0.45)
+        return boxes,result_boxes
 
     def passing_fences(self, trajet, shape):
         """Check with the config if a traject path pass the fence"""

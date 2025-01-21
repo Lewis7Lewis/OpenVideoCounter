@@ -45,7 +45,18 @@ class Computing:
 
         # predefine
         self.i = 0
-
+    def reset(self,videoinfos=None,show=False):
+        self.people = {}
+        self.show = show
+        if videoinfos is None:
+            self.videoinfos = [20, 120000]
+        else:
+            self.videoinfos = videoinfos
+        self.last_people_id = 0
+        self.counter = 0
+        self.stopped = True
+        self.i = 0
+        
     def tracking(self, detect):
         """The tracking function to calculate paths"""
         trackdist = self.analys.get_max_tracking_dist()
@@ -162,24 +173,25 @@ class Computing:
         while not self.stopped:
             try:
                 i = self.i
-                while not self.predfifo.empty() and self.predfifo.queue[0] == inf and self.predfifo.queue[0] != self.i+1 :
-                    time.sleep(0.001)
-                
+                while not self.predfifo.empty() and (self.predfifo.queue[0][0] != self.i+1 and not (self.i == self.videoinfos[1]-1 and self.predfifo.queue[0][0] == inf))  :
+                    time.sleep(0.01)
+                    print("not good last", self.predfifo.queue[0][0],self.i+1)
+
+                ## Need to be check to not loose last frames
                 i, img, prediction = self.predfifo.get(True, 1)
             except queue.Empty:
                 pass
             else:
-                if i == inf:
-                    self.peoplefifo.put((i // (self.videoinfos[0]), 0))
+                if i == inf :
+                    self.peoplefifo.put((inf, 0))
                     print("END Computing")
                     self.stop()
                 else:
                     self.i = i
-                    detect = self.analys.overlap_supression(img, prediction)
+                    raw, detect = self.analys.overlap_supression(img, prediction)
                     self.tracking(detect)
                     self.clean_people()
                     self.count_people(img)
-
                     # cv2.imshow("image",self.draw(img,detect))
                     # if ord("q")==cv2.waitKey(1) :
                     #    self.stop()
@@ -187,7 +199,7 @@ class Computing:
                         self.peoplefifo.put((i // (self.videoinfos[0]), self.counter))
 
                     if self.show:
-                        cv2.imshow("image", self.draw(img, detect))
+                        cv2.imshow("image", self.draw(img,detect))
                         cv2.waitKey(10)
 
                     self.fps.update()
@@ -198,6 +210,7 @@ class Computing:
 
     def stop(self):
         """stop the worker"""
+        print("[Computing Stop]")
         self.stopped = True
 
     def join(self):

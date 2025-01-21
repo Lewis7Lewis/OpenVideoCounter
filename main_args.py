@@ -4,6 +4,7 @@ import argparse
 import pathlib
 
 from threadcounter import ThreadCounter
+from analyzer import Analyser
 
 # Arg Parsing
 
@@ -22,16 +23,21 @@ print(f"Log File : {args.Output_file.absolute()}")
 VIDEO_FILE = str(args.Videofilename.absolute())
 CSVFILENAME = str(args.Output_file.absolute())
 
+
+analyse = Analyser("config.bak.toml")
+analyse.open()
 Detectorator = ThreadCounter(
-    "config.bak.toml",
+    analyse,
     VIDEO_FILE,
     CSVFILENAME,
-    size=32,
+    size=30,
     net="Models/yolov8n.onnx",
-    show=False,
+    show=True,
 )
 count, duration = Detectorator.run()
 factor = Detectorator.factorspeed()
 
 print(f"Le système à denombrer {count} Personnes entrante")
 print(f"Le job a pris {duration},(x{factor:.2f})")
+
+Detectorator.show_graph()
