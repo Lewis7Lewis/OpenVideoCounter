@@ -177,7 +177,7 @@ class Computing:
                     self.stop()
                 else:
                     self.i = i
-                    detect = self.analys.overlap_supression(img, prediction)
+                    raw, detect = self.analys.overlap_supression(img, prediction)
                     self.tracking(detect)
                     self.clean_people()
                     self.count_people(img)
@@ -188,7 +188,7 @@ class Computing:
                         self.peoplefifo.put((i // (self.videoinfos[0]), self.counter))
 
                     if self.show:
-                        cv2.imshow("image", self.draw(img, detect))
+                        cv2.imshow("image", self.draw(img,detect))
                         cv2.waitKey(10)
 
                     self.fps.update()

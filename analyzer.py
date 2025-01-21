@@ -182,6 +182,8 @@ class Analyser:
                 boxes.append(box)
                 scores.append(max_score)
 
+        boxes = np.array(boxes)
+
         # Apply NMS (Non-maximum suppression)
         detect = []
         #result_boxes = cv2.dnn.NMSBoxes(boxes, scores, 0.25, 0.45, 0.5)
@@ -191,8 +193,8 @@ class Analyser:
         #        box = np.array(boxes[index], dtype=np.int16)
         #        detect.append(box)
 
-        result_boxes = non_max_suppression_fast(np.array(boxes), 0.45)
-        return detect
+        result_boxes = non_max_suppression_fast(boxes, 0.45)
+        return boxes,result_boxes
 
     def passing_fences(self, trajet, shape):
         """Check with the config if a traject path pass the fence"""
