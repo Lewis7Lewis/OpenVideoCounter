@@ -60,6 +60,7 @@ class Inferance:
             self.videoinfos = videoinfos
         self.imgsfifo = imgsfifo
         self.predfifo = predfifo
+        self.predfifo.lastid = 0
 
         if providers is None :
             providers = provider
@@ -110,8 +111,8 @@ class Inferance:
 
                 if i == inf :
                     self.do_batch()
-                    while not self.predfifo.empty() and  self.predfifo.queue[self.predfifo.qsize()-1][0] != self.videoinfos[1] :
-                        print("wait finish")
+                    while self.predfifo.lastid < self.videoinfos[1]-1 :
+                        print("wait finish",self.predfifo.lastid,self.videoinfos[1])
                         time.sleep(0.001)
                     self.predfifo.put((i, [], []), True)
                     print("[End INFERANCE]")
@@ -137,9 +138,10 @@ class Inferance:
             predictions = self.predict([img for _, img in self.batch])
             self.fps.update(len(self.batch))
             for (i, img), prediction in zip(self.batch, predictions[0]):
-                while not self.predfifo.empty() and  self.predfifo.queue[-1][0] < i-1 or (self.predfifo.empty() and i != 0):
+                while self.predfifo.lastid < i-1 :
                     time.sleep(0.001)
                 self.predfifo.put((i, img, prediction), True)
+                self.predfifo.lastid = i
 
     def stop(self):
         """Stop the worker"""
