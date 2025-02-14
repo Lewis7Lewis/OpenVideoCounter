@@ -290,12 +290,19 @@ class Gui(Tk):
             self.urlNet.insert(0, netfilename)
 
     def start(self):
-        self.TD = ThreadCounter(
-            self.configuration.get_datas(),self.urlVideo.get(),self.urlOutput.get(),
-            size=30,
-            net=self.urlNet.get(),
-            show= 'selected' in self.video.state()
-        )
+        if self.TD is None or True:
+            self.TD = ThreadCounter(
+                self.configuration.get_datas(),self.urlVideo.get(),self.urlOutput.get(),
+                size=30,
+                net=self.urlNet.get(),
+                show= 'selected' in self.video.state()
+            )
+        else :
+            ### Can't restart thread
+            self.TD.reset(self.configuration.get_datas(),self.urlVideo.get(),self.urlOutput.get(),
+                size=30,
+                net=self.urlNet.get(),
+                show= 'selected' in self.video.state())
         self.startstop.config(bg="red", activebackground="#822", text="Stop",command=self.stop)
         self.showgraph.config(state="disabled")
         self.TD.start()

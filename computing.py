@@ -45,7 +45,18 @@ class Computing:
 
         # predefine
         self.i = 0
-
+    def reset(self,videoinfos=None,show=False):
+        self.people = {}
+        self.show = show
+        if videoinfos is None:
+            self.videoinfos = [20, 120000]
+        else:
+            self.videoinfos = videoinfos
+        self.last_people_id = 0
+        self.counter = 0
+        self.stopped = True
+        self.i = 0
+        
     def tracking(self, detect):
         """The tracking function to calculate paths"""
         trackdist = self.analys.get_max_tracking_dist()
@@ -177,7 +188,7 @@ class Computing:
                     self.stop()
                 else:
                     self.i = i
-                    detect = self.analys.overlap_supression(img, prediction)
+                    raw, detect = self.analys.overlap_supression(img, prediction)
                     self.tracking(detect)
                     self.clean_people()
                     self.count_people(img)
@@ -188,7 +199,7 @@ class Computing:
                         self.peoplefifo.put((i // (self.videoinfos[0]), self.counter))
 
                     if self.show:
-                        cv2.imshow("image", self.draw(img, detect))
+                        cv2.imshow("image", self.draw(img,detect))
                         cv2.waitKey(10)
 
                     self.fps.update()

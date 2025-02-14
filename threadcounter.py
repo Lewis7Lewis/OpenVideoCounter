@@ -26,12 +26,14 @@ class ThreadCounter:
         self.people = queue.Queue(60)
 
         self.analys =analys
+        self.url = url
         self.cam = Reader(url, self.analys, self.imgs)
         videoinfos = self.cam.framerate, self.cam.frame_count
         self.infes = [Inferance(
             self.imgs, self.preds, self.analys, videoinfos, net, size=size,index = i+1,providers= [p]
         ) for i, p in enumerate(provider)]
         self.compute = Computing(self.preds, self.people, self.analys, videoinfos, show)
+        self.logfile = logfile
         self.loger = Loger(logfile, self.people)
         self.duration = datetime.timedelta(milliseconds=1)
 
@@ -108,3 +110,15 @@ class ThreadCounter:
         fig = plt.figure('Size of Queues')
         self.graph.make_graph(fig)
         plt.show()
+
+
+    def reset(self, analys:Analyser, url, logfile, size=30, net="yolov8n.onnx", show=False):
+        self.url= url
+        self.logfile = logfile
+        self.cam = Reader(url, self.analys, self.imgs)
+        self.analys.from_dict(analys.to_dict())
+        videoinfos = self.cam.framerate, self.cam.frame_count
+        for infe in self.infes :
+            infe.reset(videoinfos,net,size)
+        self.compute.reset(videoinfos,show)
+        self.loger = Loger(self.logfile, self.people)
