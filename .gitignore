@@ -4,5 +4,7 @@
 /__pycache__
 /.venv
 /trt_engines
+/gui.build
+/gui.dist
 .gitignore
 config.bak.toml
