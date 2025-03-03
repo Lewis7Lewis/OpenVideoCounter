@@ -34,6 +34,8 @@ class Filters:
     tracking_distance = 75
     min_walking_distance =5
     max_tracking_distance = 40
+    clip_limit = 1.5
+    titlegridsize = 12
 
     def to_dict(self):
         """To dict for saving"""
@@ -42,6 +44,8 @@ class Filters:
                 "trackingDistance": self.tracking_distance,
                 "minWalkingDistance": self.min_walking_distance,
                 "maxTrackingDistance": self.max_tracking_distance,
+                "clipLimit" : self.clip_limit,
+                "titleGridSize" : self.titlegridsize
             }
     
     def from_dict(self,dic:dict):
@@ -50,6 +54,8 @@ class Filters:
         self.tracking_distance = dic.get("trackingDistance",self.tracking_distance)
         self.min_walking_distance = dic.get("minWalkingDistance",self.min_walking_distance)
         self.max_tracking_distance = dic.get("maxTrackingDistance",self.max_tracking_distance)
+        self.clip_limit = dic.get("clipLimit",self.clip_limit)
+        self.titlegridsize = dic.get("titleGridSize",self.titlegridsize)
 
 class Fence :
     """Fence parameters class"""
@@ -78,6 +84,7 @@ class Analyser:
         self.crops = Crops()
         self.fence = Fence()
         self.to_dict()
+        self.clahe = cv2.createCLAHE(clipLimit=self.filters.clip_limit, tileGridSize=(self.filters.titlegridsize,self.filters.titlegridsize)) 
 
     def to_dict(self):
         """To save parameters"""
@@ -93,6 +100,8 @@ class Analyser:
         self.crops.from_dict(dic.get("crop",{}))
         self.filters.from_dict(dic.get("filters",{}))
         self.fence.from_dict(dic.get("fence",{}))
+        self.clahe = cv2.createCLAHE(clipLimit=self.filters.clip_limit, tileGridSize=(self.filters.titlegridsize,self.filters.titlegridsize)) 
+
 
     def get_max_tracking_dist(self):
         """Return the maxtracking distance parameter for the tracking"""
@@ -131,7 +140,18 @@ class Analyser:
             error += "Error : too much crop on top bottom\n"
 
         return ok,error
-
+    def recolor(self,img):
+        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        # Split the LAB image into separate channels
+        l, a, b = cv2.split(lab)
+        # Apply CLAHE to the L channel
+        l = self.clahe.apply(l)
+        # Merge the LAB channels back together
+        lab = cv2.merge((l,a,b))
+        # Convert the LAB image back to RGB color space
+        output = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        return output
+    
     def crop_scale_inferance(self, img):
         """Prepare the image to inference by croping and scaling"""
         h, w, _ = img.shape

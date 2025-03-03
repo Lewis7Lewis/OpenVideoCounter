@@ -102,7 +102,7 @@ class Configuration(LabelFrame):
                     return
             else:
                 img = cv2.imread(url)
-            cv2.imshow("Croping",a.draw_settings(a.crop_scale_inferance(img)))
+            cv2.imshow("Croping",a.draw_settings(a.recolor(a.crop_scale_inferance(img))))
             cv2.waitKey(0)
 
             
@@ -126,7 +126,7 @@ class Configuration(LabelFrame):
         )
         if filename != "":
             a = self.get_datas()
-            a.save()
+            a.save(filename)
 
     def filter_float(self,data=str):
         inte = ""

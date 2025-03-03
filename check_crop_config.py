@@ -39,4 +39,5 @@ if __name__ == "__main__":
     show("Base_image", image)
     resize = analys.crop_scale_inferance(image)
     show("inference image", analys.draw_settings(resize))
+    show("recolor", analys.recolor(resize))
     cv2.waitKey(0)

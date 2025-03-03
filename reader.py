@@ -55,7 +55,7 @@ class Reader:
                 self.i += 1
                 self.fps.update()
                 self.fifo.put(
-                    (self.i, self.analys.crop_scale_inferance(self.frame)), True
+                    (self.i, self.analys.recolor(self.analys.crop_scale_inferance(self.frame))), True
                 )
             if self.grabbed is False:
                 self.fifo.put((inf, []), True)
