@@ -11,7 +11,7 @@ from threadcounter import ThreadCounter
 from analyzer import Fence,Crops,Filters,Analyser
 
 logger = logging.getLogger(__name__ if __name__ != "__main__" else "GUI")
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class LabelSpinbox(Frame):

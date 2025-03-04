@@ -65,11 +65,11 @@ class Fence :
     """Fence parameters class"""
     l = 50
     r = 50
-    angle = 20
+    angle = 160
 
     def to_dict(self):
         """To dict parameters"""
-        return {"l": 50, "r": 50, "angle": 20}
+        return {"l": self.l, "r": self.r, "angle": self.angle}
     
     def from_dict(self,dic:dict):
         """Load from dict"""
@@ -133,7 +133,7 @@ class Analyser:
         with open(file, "w", encoding="utf-8") as fic:
             tomlkit.dump(self.config, fic)
 
-        logger.info("Save file : %s", self.config)
+        logger.info("Save file : %s", file)
 
     def check(self):
         """Check all the paramters"""
