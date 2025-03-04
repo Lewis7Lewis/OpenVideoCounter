@@ -1,3 +1,5 @@
+import logging
+
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
@@ -7,6 +9,10 @@ import cv2
 
 from threadcounter import ThreadCounter
 from analyzer import Fence,Crops,Filters,Analyser
+
+logger = logging.getLogger(__name__ if __name__ != "__main__" else "GUI")
+logging.basicConfig(level=logging.INFO)
+
 
 class LabelSpinbox(Frame):
     def __init__(self, master, text,minmaxinc=[0,100,1],*args,**kwargs):
@@ -131,7 +137,7 @@ class Configuration(LabelFrame):
     def filter_float(self,data=str):
         inte = ""
         for v in data:
-            if v.isnumeric():
+            if v.isnumeric() or v==".":
                 inte += v
 
         return float(inte)
@@ -308,6 +314,7 @@ class Gui(Tk):
         self.TD.start()
         self.TD.graph.add_rec()
         self.update()
+        logger.info("Starting")
 
     def update(self):
         self.pourcentVar.set(self.TD.pourcent())
@@ -320,6 +327,7 @@ class Gui(Tk):
 
     def stop(self):
         self.TD.stop()
+        logger.info("Stop")
 
     def start_config(self):
         self.startstop.config(bg="Green", activebackground="lightgreen", text="Start",command=self.start)

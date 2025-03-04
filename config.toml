@@ -9,6 +9,8 @@ maxsize = 150
 trackingDistance = 75
 minWalkingDistance = 5
 maxTrackingDistance = 40
+clipLimit = 1.5
+titleGridSize = 30
 
 [fence]
 l = 25

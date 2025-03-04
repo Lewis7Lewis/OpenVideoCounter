@@ -1,4 +1,5 @@
 """Inference module"""
+import logging
 from math import inf
 import queue
 from threading import Thread
@@ -13,6 +14,8 @@ from analyzer import Analyser
 from fpsmeter import FPSMeter
 from functions import beautifultime
 from static import INFOTIME
+
+logger = logging.getLogger(__name__)
 
 
 trt_ep_options = {
@@ -131,7 +134,7 @@ class Inferance:
                     while self.predfifo.lastid < self.videoinfos[1]-1 :
                         time.sleep(0.001)
                     self.predfifo.put((i, [], []), True)
-                    print("[End INFERANCE]")
+                    logger.info("End")
                     self.stopped = True
                 else:
                     # print(img.shape)
@@ -143,8 +146,8 @@ class Inferance:
                     self.do_batch()
                     self.batch = []
                 if i != inf and i % (INFOTIME * self.videoinfos[0]) == 0:
-                    print(
-                        f"Inference {self.index}: {i} images ({beautifultime(i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f})"
+                    logger.info(
+                        f"{self.index}: {i} images ({beautifultime(i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f})"
                     )
 
     def do_batch(self):
@@ -161,7 +164,7 @@ class Inferance:
 
     def stop(self):
         """Stop the worker"""
-        print(f"[Inferance {self.index} Stop]")
+        logger.info(f"{self.index} Stop")
         self.stopped = True
 
     def join(self):

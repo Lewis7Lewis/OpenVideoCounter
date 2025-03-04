@@ -1,5 +1,7 @@
 """The analyser setting that make the specific calculation of the counter"""
 
+import logging
+
 import cv2
 import numpy as np
 import tomlkit
@@ -7,6 +9,8 @@ import tomlkit
 
 from functions import distance, intersects, determinant, vect, non_max_suppression_fast
 
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -93,10 +97,12 @@ class Analyser:
             "filters": self.filters.to_dict(),
             "fence": self.fence.to_dict(),
         }
+        logger.debug("Config to Dict : %s", self.config)
         return self.config
     
     def from_dict(self,dic:dict):
         """Import parameters"""
+        logger.debug("From dict to Config : %s", dic)
         self.crops.from_dict(dic.get("crop",{}))
         self.filters.from_dict(dic.get("filters",{}))
         self.fence.from_dict(dic.get("fence",{}))
@@ -114,7 +120,7 @@ class Analyser:
 
         with open(file, "r", encoding="utf-8") as fic:
             self.config = dict(tomlkit.load(fic))
-
+        logger.info("Load file : %s", self.config)
         self.from_dict(self.config)
 
     def save(self, file=None):
@@ -126,6 +132,8 @@ class Analyser:
 
         with open(file, "w", encoding="utf-8") as fic:
             tomlkit.dump(self.config, fic)
+
+        logger.info("Save file : %s", self.config)
 
     def check(self):
         """Check all the paramters"""
@@ -139,6 +147,8 @@ class Analyser:
             ok = False
             error += "Error : too much crop on top bottom\n"
 
+        if not ok:
+            logger.error("Error : %s", error)
         return ok,error
     def recolor(self,img):
         lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -150,17 +160,22 @@ class Analyser:
         lab = cv2.merge((l,a,b))
         # Convert the LAB image back to RGB color space
         output = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        logger.debug("Recolor : %s",output.shape)
         return output
     
     def crop_scale_inferance(self, img):
         """Prepare the image to inference by croping and scaling"""
         h, w, _ = img.shape
         l, r, t, b = self.crops.left,self.crops.right,self.crops.top,self.crops.bottom
+        logger.debug(f"Crop % : l, r, t, b : {l, r, t, b}")
         img = img[int(h * t / 100) : h - int(h * b / 100)]
         img = img[:, int(w * l / 100) : w - int(w * r / 100)]
+
+        logger.debug("Crop : %s",img.shape)
         # Scale for the inference
         f = 640 / min(img.shape[:2])
         img = cv2.resize(img, None, fx=f, fy=f)
+        logger.debug("Crop and scale factor : %s",f)
         return img
 
     def overlap_supression(self, img, predictions):
@@ -214,6 +229,7 @@ class Analyser:
         #        detect.append(box)
 
         result_boxes = non_max_suppression_fast(boxes, 0.45)
+        logger.debug("Overlap supression : %s",len(result_boxes))
         return boxes,result_boxes
 
     def passing_fences(self, trajet, shape):
@@ -228,14 +244,16 @@ class Analyser:
         fp = np.array([(0, fl * height / 100), (width, fr * height / 100)])
 
         if not intersects(trajet, fp):
+            logger.debug("No intersection")
             return False, "No intersection"
 
         fv = np.array((-np.sqrt(1 - ((fl - fr) / 100) ** 2), (fl - fr) / 100))
         if not determinant(vect(*trajet), fv) / distance(*trajet) >= np.cos(
             np.deg2rad(self.fence.angle) / 2
         ):
+            logger.debug("Not in the aceptence cone")
             return False, "Not in the aceptence cone"
-
+        logger.debug("Perfect")
         return True, "Perfect"
 
     def draw_settings(self, img):

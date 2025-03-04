@@ -1,9 +1,11 @@
 """loger Module"""
-
+import logging
 from math import inf
 import queue
 from threading import Thread
 import csv
+
+logger = logging.getLogger(__name__)
 
 
 class Loger:
@@ -52,11 +54,12 @@ class Loger:
     def start(self):
         """Start the worker"""
         self.stopped = False
+        logger.info("Start")
         self.t.start()
 
     def stop(self):
         """Stop the worker"""
-        print("[Loger Stop]")
+        logger.info("Stop")
         self.stopped = True
 
     def join(self):

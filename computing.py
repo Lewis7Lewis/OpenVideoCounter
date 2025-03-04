@@ -1,5 +1,5 @@
 """computing module"""
-
+import logging
 from math import inf
 import queue
 from threading import Thread
@@ -11,6 +11,9 @@ from analyzer import Analyser
 from fpsmeter import FPSMeter
 from functions import distance, beautifultime
 from static import LIST_COLORS, INFOTIME
+
+
+logger = logging.getLogger(__name__)
 
 
 class Computing:
@@ -56,6 +59,8 @@ class Computing:
         self.counter = 0
         self.stopped = True
         self.i = 0
+
+        logger.debug("Reset the computing worker")
         
     def tracking(self, detect):
         """The tracking function to calculate paths"""
@@ -93,11 +98,16 @@ class Computing:
                 }
                 self.last_people_id += 1
 
+        logger.debug("Tracking : %s", len(self.people))
+
     def clean_people(self):
         """Clean the tracking path to clear the memory"""
+        total = len(self.people)
         for p in list(self.people.keys()):
             if not self.people[p]["last_seen"] + (self.videoinfos[0] * 2) >= self.i:
                 del self.people[p]
+        
+        logger.debug("Cleaning : %s",total- len(self.people))
 
     def count_people(self, img):
         """Counting the numbers of trepassing"""
@@ -115,6 +125,7 @@ class Computing:
                 if passing:
                     self.people[p]["pass"] = True
                     self.counter += 1
+        logger.debug("Counting : %s", self.counter)
 
     def draw(self, img, detect):
         """The drawing function to see what's is going on"""
@@ -167,6 +178,7 @@ class Computing:
         """Start the worker"""
         self.stopped = False
         self.t.start()
+        logger.info("Start")
 
     def update(self):
         """the threaded main process"""
@@ -175,7 +187,7 @@ class Computing:
                 i = self.i
                 while not self.predfifo.empty() and (self.predfifo.queue[0][0] != self.i+1 and not (self.i == self.videoinfos[1]-1 and self.predfifo.queue[0][0] == inf))  :
                     time.sleep(0.01)
-                    print("not good last", self.predfifo.queue[0][0],self.i+1)
+                    logger.warning("not good last %s", self.predfifo.queue[0][0],self.i+1)
 
                 ## Need to be check to not loose last frames
                 i, img, prediction = self.predfifo.get(True, 1)
@@ -184,7 +196,7 @@ class Computing:
             else:
                 if i == inf :
                     self.peoplefifo.put((inf, 0))
-                    print("END Computing")
+                    logger.info("END")
                     self.stop()
                 else:
                     self.i = i
@@ -204,13 +216,13 @@ class Computing:
 
                     self.fps.update()
                     if self.i % (INFOTIME * self.videoinfos[0]) == 0:
-                        print(
-                            f"Computing  : {i} images ({beautifultime(self.i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f}) ; count {self.counter},"
+                        logger.info(
+                            f"{i} images ({beautifultime(self.i//self.videoinfos[0])}) (FPS:{self.fps.fps:.2f}) ; count {self.counter},"
                         )
 
     def stop(self):
         """stop the worker"""
-        print("[Computing Stop]")
+        logger.info("Stop")
         self.stopped = True
 
     def join(self):

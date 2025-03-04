@@ -3,6 +3,7 @@
 import datetime
 import queue
 import time
+import logging
 
 from analyzer import Analyser
 from computing import Computing
@@ -12,6 +13,8 @@ from loger import Loger
 from graph import Graph
 
 import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
 
 
 class ThreadCounter:
@@ -46,6 +49,7 @@ class ThreadCounter:
     def start(self):
         """the starting function"""
         self.runing =True
+        logger.info("Start File proccessing on %s", self.url)
         self.starttime = datetime.datetime.now()
         self.graph.add_rec()
         self.cam.start()
@@ -61,7 +65,7 @@ class ThreadCounter:
                 self.graph.add_rec()
                 time.sleep(0.01)
         except KeyboardInterrupt:
-            print("Interuption")
+            logger.warning("Interuption")
             time.sleep(0.1)
 
         self.close()
@@ -76,7 +80,7 @@ class ThreadCounter:
         return self.compute.i / self.cam.frame_count
     
     def stop(self):
-        print("Stop")
+        logger.info("Stop")
         self.runing = False
         self.close()
 
@@ -85,7 +89,7 @@ class ThreadCounter:
     
 
     def close(self):
-        print("Close")
+        logger.info("Close")
         self.runing = False
         self.cam.stop()
         for infe in self.infes :

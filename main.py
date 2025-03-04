@@ -1,11 +1,13 @@
 """The main program to use the counter"""
-
+import logging
 from tkinter import filedialog
 from tkinter import messagebox
 
 
 from threadcounter import ThreadCounter
 from analyzer import Analyser
+
+logger = logging.getLogger(__name__ if __name__ != "__main__" else "Main")
 
 if __name__ == "__main__":
     Video_file = filedialog.askopenfilename(title="Select a VideoFile")
@@ -24,12 +26,12 @@ if __name__ == "__main__":
         net="Models/yolov8n.onnx",
         show=False,
     )
-    print("Starting")
+    logger.info("Starting")
     count, duration = Detectorator.run()
     factor = Detectorator.factorspeed()
 
-    print(f"Le système à denombrer {count} Personnes entrante")
-    print(f"Le job a pris {duration},(x{factor:.2f})")
+    logger.info(f"Le système à denombrer {count} Personnes entrante")
+    logger.info(f"Le job a pris {duration},(x{factor:.2f})")
 
     Detectorator.show_graph()
 
