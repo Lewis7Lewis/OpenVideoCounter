@@ -11,7 +11,7 @@ from threadcounter import ThreadCounter
 from analyzer import Fence,Crops,Filters,Analyser
 
 logger = logging.getLogger(__name__ if __name__ != "__main__" else "GUI")
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class LabelSpinbox(Frame):
@@ -34,8 +34,10 @@ class Configuration(LabelFrame):
         self.IOFrame = Frame(self)
         self.Bopen = Button(self.IOFrame,text="Open Config",command=self.openfile)
         self.Bsave = Button(self.IOFrame,text="Save config",command=self.savefile)
-        self.Bopen.grid(row=0,column=0)
-        self.Bsave.grid(row = 0,column=1)
+        self.Bopen.grid(row=0,column=0,sticky=NSEW)
+        self.Bsave.grid(row = 0,column=1,   sticky=NSEW)
+        self.IOFrame.grid_columnconfigure([0,1],weight=1)
+        self.IOFrame.grid_rowconfigure([0],weight=1)
 
         self.crop = LabelFrame(self,text="Crop")
         self.cropleft = LabelSpinbox(self.crop,"Left")
@@ -276,6 +278,10 @@ class Gui(Tk):
         if Video_file != "" :
             self.urlVideo.delete(0, END)
             self.urlVideo.insert(0, Video_file)
+            # Automatic ouput file
+            if self.urlOutput.get() == "":
+                self.urlOutput.delete(0, END)
+                self.urlOutput.insert(0, ".".join(Video_file.split(".")[:-1]) + ".csv")
 
     def select_output(self):
         csvfilename = filedialog.asksaveasfilename(
