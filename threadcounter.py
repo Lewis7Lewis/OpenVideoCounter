@@ -69,6 +69,7 @@ class ThreadCounter:
             time.sleep(0.1)
 
         self.close()
+        logger.info(f"End of processing time taken : {self.duration}")
 
         return self.get_result()
     
