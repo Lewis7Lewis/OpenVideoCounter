@@ -238,6 +238,10 @@ class Gui(Tk):
 
         self.video = ttk.Checkbutton(self.params, text="Enable Video output")
         self.video.grid(row=3, column=1, columnspan=3, sticky=NSEW)
+        self.video.state(['!alternate'])
+        self.ring = ttk.Checkbutton(self.params, text = "Ring when Finish",state="selected")
+        self.ring.grid(row=4,column=1,columnspan=3,sticky=NSEW)
+        self.ring.state(['!alternate','selected'])
 
         self.configuration = Configuration(self,self.urlVideo)
 
@@ -259,7 +263,7 @@ class Gui(Tk):
         self.inputs.grid_columnconfigure(2,weight=2)
 
         self.params.grid(row=2, column=2, sticky=NSEW)
-        self.params.grid_rowconfigure([1,2],weight=1)
+        self.params.grid_rowconfigure([1,2,3,4],weight=1)
         self.params.grid_columnconfigure([1,3],weight=1)
         self.params.grid_columnconfigure(2,weight=2)
 
@@ -279,9 +283,17 @@ class Gui(Tk):
             self.urlVideo.delete(0, END)
             self.urlVideo.insert(0, Video_file)
             # Automatic ouput file
+            url = ".".join(Video_file.split(".")[:-1])
             if self.urlOutput.get() == "":
-                self.urlOutput.delete(0, END)
-                self.urlOutput.insert(0, ".".join(Video_file.split(".")[:-1]) + ".csv")
+                self.set_urlOuput( url )
+            elif messagebox.askyesno("Replace CSV file","Do you want to change to the default Ouput file ?\n This action overwrite the previous name\n Output file : "+url):
+                self.set_urlOuput(url)
+            else :
+                pass #do nothing
+
+    def set_urlOuput(self,url):
+        self.urlOutput.delete(0, END)
+        self.urlOutput.insert(0,url + ".csv")
 
     def select_output(self):
         csvfilename = filedialog.asksaveasfilename(
@@ -330,7 +342,10 @@ class Gui(Tk):
             self.after(10,self.update)
         else :
             self.start_config()
-
+            if 'selected' in self.ring.state() :
+                self.bell()
+                self.bell()
+                self.bell()
     def stop(self):
         self.TD.stop()
         logger.info("Stop")
